@@ -1,0 +1,36 @@
+{
+    "name": "r1ko/query-builder",
+    "description": "Simple SQL Query Builder",
+    "authors": [
+        {
+            "name": "R1KO",
+            "email": "vova.andrienko@mail.ru"
+        }
+    ],
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "version": "1.0.0",
+    "require": {
+        "php": ">=7.4",
+        "r1ko/database-connection": "dev-master"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "phpstan/phpstan": "^0.12.81",
+        "vimeo/psalm": "^4.6",
+        "squizlabs/php_codesniffer": "*",
+        "fakerphp/faker": "^1.13",
+        "vlucas/phpdotenv": "^5.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "R1KO\\QueryBuilder\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    }
+}
