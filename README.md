@@ -11,8 +11,13 @@ $params = [
     'driver'    => 'mysql',
     'host'      => 'localhost',
     'port'      => '3306',
+<<<<<<< HEAD
     'name'      => 'database',
     'user'      => 'root',
+=======
+    'database'  => 'database',
+    'username'  => 'root',
+>>>>>>> 15a218f89a6a031ec5e562c8d21607c8aea7d345
     'password'  => 'password',
     'charset'   => 'utf8mb4',
 ];
