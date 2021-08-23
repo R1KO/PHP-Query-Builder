@@ -40,39 +40,39 @@ before_script:
   - php -r "unlink('composer-setup.php');"
   - php composer.phar install
 
-codestyle:
-  script:
-    - ./vendor/bin/phpcs src
+#codestyle:
+#  script:
+#    - ./vendor/bin/phpcs src
+#
+#static_code_analytics_psalm:
+#  script:
+#    - ./vendor/bin/psalm
+#
+#static_code_analytics_phpstan:
+#  script:
+#    - ./vendor/bin/phpstan analyse src
 
-static_code_analytics_psalm:
-  script:
-    - ./vendor/bin/psalm
-
-static_code_analytics_phpstan:
-  script:
-    - ./vendor/bin/phpstan analyse src
-
-unit_tests_sqlite:
-  variables:
-    DB_DRIVER: sqlite
-    DB_HOST: ''
-    DB_USER: ''
-    DB_NAME: ''
-    DB_PORT: ''
-    DB_PASSWORD: ''
-    DB_PATH: ':memory:'
-    DB_CHARSET: ''
-    XDEBUG_MODE: coverage
-  script:
-    - cp .env.example .env
-    - envsubst < ".env.example" > ".env"
-    - php ./vendor/bin/phpunit tests -c phpunit.xml --coverage-text --colors=never
-  artifacts:
-    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA"
-    paths:
-      - .env
-    expire_in: 1 days
-    when: always
+#unit_tests_sqlite:
+#  variables:
+#    DB_DRIVER: sqlite
+#    DB_HOST: ''
+#    DB_USER: ''
+#    DB_NAME: ''
+#    DB_PORT: ''
+#    DB_PASSWORD: ''
+#    DB_PATH: ':memory:'
+#    DB_CHARSET: ''
+#    XDEBUG_MODE: coverage
+#  script:
+#    - cp .env.example .env
+#    - envsubst < ".env.example" > ".env"
+#    - php ./vendor/bin/phpunit tests -c phpunit.xml --coverage-text --colors=never
+#  artifacts:
+#    name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA"
+#    paths:
+#      - .env
+#    expire_in: 1 days
+#    when: always
 
 unit_tests_mysql:
   variables:

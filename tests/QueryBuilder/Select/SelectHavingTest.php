@@ -2,8 +2,7 @@
 
 namespace Tests\QueryBuilder;
 
-use R1KO\Database\QueryBuilder;
-use Tests\QueryBuilder\TestCase;
+use Tests\TestCase;
 use Tests\Traits\UsersTable;
 
 class SelectHavingTest extends TestCase
@@ -19,7 +18,7 @@ class SelectHavingTest extends TestCase
         $this->createUserByValues($users[1]);
 
         $results = $this->db->table('users')
-            ->select([QueryBuilder::raw('COUNT(address) as addresses')])
+            ->select([$this->db->raw('COUNT(address) as addresses')])
             ->groupBy('address')
             ->having('addresses >', '1')
             ->getAll();

@@ -2,10 +2,8 @@
 
 namespace Tests\QueryBuilder\Insert;
 
-use Tests\QueryBuilder\TestCase;
+use Tests\TestCase;
 use Tests\Traits\UsersTable;
-use R1KO\Database\Contracts\IConnection;
-use R1KO\Database\Contracts\IQueryBuilder;
 
 class DeleteTest extends TestCase
 {

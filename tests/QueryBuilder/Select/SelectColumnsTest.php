@@ -2,10 +2,8 @@
 
 namespace Tests\QueryBuilder;
 
-use R1KO\Database\QueryBuilder;
-use Tests\QueryBuilder\TestCase;
+use Tests\TestCase;
 use Tests\Traits\UsersTable;
-use R1KO\Database\Contracts\IConnection;
 
 class SelectColumnsTest extends TestCase
 {
@@ -120,7 +118,7 @@ class SelectColumnsTest extends TestCase
 
         $columns = [
             'id',
-            QueryBuilder::raw('address AS user_address'),
+            $this->db->raw('address AS user_address'),
         ];
         $results = $this->db->table('users')
             ->select($columns)

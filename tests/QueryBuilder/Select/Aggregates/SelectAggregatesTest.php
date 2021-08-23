@@ -2,11 +2,10 @@
 
 namespace Tests\QueryBuilder;
 
-use Tests\QueryBuilder\TestCase;
+use Tests\TestCase;
 use Tests\Traits\UsersTable;
 use Tests\Traits\PostsTable;
 use Tests\Traits\OrdersTable;
-use R1KO\Database\Contracts\IConnection;
 
 class SelectAggregatesTest extends TestCase
 {

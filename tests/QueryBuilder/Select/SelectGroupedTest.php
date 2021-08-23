@@ -2,7 +2,7 @@
 
 namespace Tests\QueryBuilder;
 
-use Tests\QueryBuilder\TestCase;
+use Tests\TestCase;
 use Tests\Traits\UsersTable;
 
 class SelectGroupedTest extends TestCase

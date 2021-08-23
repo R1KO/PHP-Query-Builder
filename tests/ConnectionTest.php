@@ -1,10 +1,11 @@
 <?php
 
-namespace Tests\QueryBuilder;
+namespace Tests;
 
-use Tests\QueryBuilder\TestCase;
 use R1KO\Database\Contracts\IConnection;
-use R1KO\Database\Contracts\IQueryBuilder;
+use R1KO\QueryBuilder\Contracts\IQueryBuilder;
+use R1KO\QueryBuilder\ConnectionWithBuilderFactory;
+use R1KO\QueryBuilder\ConnectionWithBuilder;
 
 class ConnectionTest extends TestCase
 {
