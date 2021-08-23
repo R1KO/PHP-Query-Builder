@@ -275,7 +275,7 @@ $id = $db->table('users')
 > Gets an array of rows of values of one column
 
 ```php
-$id = $db->table('users')
+$emails = $db->table('users')
     ->getCol('email');
 ```
 
@@ -285,6 +285,27 @@ $id = $db->table('users')
     'ivan.ivanov@gmail.com',
     'petro.petrov@gmail.com',
 ]
+```
+
+### `getColIterable`
+
+```php
+$emails = $db->table('users')
+    ->getColIterable('email');
+
+foreach ($emails as $email) {
+    
+}
+```
+
+```
+
+'test.user1@gmail.com'
+
+'ivan.ivanov@gmail.com'
+
+'petro.petrov@gmail.com'
+
 ```
 
 

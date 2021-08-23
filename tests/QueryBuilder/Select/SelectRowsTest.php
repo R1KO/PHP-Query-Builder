@@ -10,7 +10,7 @@ class SelectRowsTest extends TestCase
 {
     use UsersTable;
 
-    public function testSelectAllColumns(): void
+    public function testSelectAllRows(): void
     {
         $this->createUsersTable();
         $this->createUsers(5);
