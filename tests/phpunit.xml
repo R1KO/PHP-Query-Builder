@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<phpunit backupGlobals="false"
+         bootstrap="./bootstrap.php"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         forceCoversAnnotation="false"
+         verbose="true"
+         colors="true">
+    <testsuites>
+        <testsuite name="Main">
+            <directory>./</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+    </php>
+
+    <logging>
+        <log type="junit" target="./reports/phpunit.xml"/>
+        <log type="coverage-clover" target="./reports/phpunit.coverage.xml"/>
+    </logging>
+
+</phpunit>
