@@ -1041,6 +1041,17 @@ class QueryBuilder implements IQueryBuilder
 
         return $this;
     }
+
+
+    public function __call(string $name, array $arguments)
+    {
+        if (strncmp($name, 'where', 5) === 0) {
+            $this->getWhereBuilder()->and($this->getOperator(substr($name, 5)), ...$arguments);
+        }
+        if (strncmp($name, 'orWhere', 7) === 0) {
+            $this->getWhereBuilder()->or($this->getOperator(substr($name, 7)), ...$arguments);
+        }
+    }
 */
     // whereIn
     // whereNotIn
@@ -1081,12 +1092,12 @@ class QueryBuilder implements IQueryBuilder
         return new ConditionsBuilder();
     }
 
-    public static function createRaw(string $expression): RawExpression
+    public static function asRaw(string $expression): Raw
     {
         return new RawExpression($expression);
     }
 
-    public function raw(string $expression): RawExpression
+    public function raw(string $expression): Raw
     {
         return static::raw($expression);
     }
@@ -1109,20 +1120,5 @@ class QueryBuilder implements IQueryBuilder
         }
 
         return $result;
-    }
-
-    public function __call(string $name, array $arguments)
-    {
-        if (strncmp($name, 'where', 5) === 0) {
-            $this->getWhereBuilder()->and($this->getOperator(substr($name, 5)), ...$arguments);
-        }
-        if (strncmp($name, 'orWhere', 7) === 0) {
-            $this->getWhereBuilder()->or($this->getOperator(substr($name, 7)), ...$arguments);
-        }
-    }
-
-    private function getOperator(string $name): string
-    {
-        $name
     }
 }

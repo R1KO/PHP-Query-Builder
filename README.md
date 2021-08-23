@@ -2,7 +2,6 @@
 
 [![pipeline status](https://gitlab.com/R1KO/php-query-builder/badges/master/pipeline.svg)](https://gitlab.com/R1KO/php-query-builder/-/commits/master) [![coverage report](https://gitlab.com/R1KO/php-query-builder/badges/master/coverage.svg)](https://gitlab.com/R1KO/php-query-builder/-/commits/master)
 
-
 ## Connection with use QueryBuilder
 
 ```php
@@ -74,7 +73,7 @@ $count = $db->table('users')
 ### Mass Insert
 
 ```php
-public function insertMass(array $values): array;
+public function insertMass(array $values, bool $useTransaction = false): array;
 ```
 
 > Insert a set of data into a table as a prepared query and returns an array of added row IDs
@@ -218,7 +217,7 @@ foreach ($users as $user) {
 [
     'id' => 4,
     'status' => 'active',
-
+]
 
 [
     'id' => 3,
@@ -299,16 +298,16 @@ $id = $db->table('users')
     ->getOne();
 ```
 
-```
-1500
-
-
 
 ### Aliases
 
 ```php
 $id = $db->table('users')
-    ->select(['id' => 'user_id', 'status'])
+    ->select([
+        'id' => 'user_id', 
+        'status', 
+        $db->raw('IF(deleted_at IS NULL, 1, 0)') => 'is_active'
+    ])
     ->getAll();
 ```
 
@@ -317,11 +316,13 @@ $id = $db->table('users')
     [
         'user_id' => 1,
         'status' => 'active',
+        'is_active' => 1,
     ],
     [
         'user_id' => 2,
-        'status' => 'deleted',
-    ],
+        'status' => 'inactive',
+        'is_active' => 0,
+   ],
 ]
 ```
 
@@ -339,9 +340,11 @@ $id = $db->table('users')
 ```php
 $columns = [
     'id',
-    QueryBuilder::raw('address AS user_address'),
+    $db->raw('address AS user_address'),
+    // or
+    QueryBuilder::asRaw('address AS user_address'),
 ];
-$results = $this->db->table('users')
+$results = $db->table('users')
     ->select($columns)
     ->getAll();
 ```
@@ -352,8 +355,10 @@ $results = $this->db->table('users')
 > 
 ```php
 public function where(string $column, array|string|int|bool $value);
+public function where(string $column, string $operator, array|string|int|bool $value);
 public function where(string $column, Closure $value);
 public function where(Closure $condition);
+public function where(Raw $expression);
 public function where(array $conditions);
 public function whereAnd(array $conditions);
 public function whereOr(array $conditions);
@@ -362,23 +367,23 @@ public function whereOr(array $conditions);
 ```php
 $results = $this->db->table('users')
     ->select(['*'])
-    ->where('name', $user['name'])
+    ->where('name', 'R1KO')
     ->getAll();
 ```
 
 ```php
 $results = $this->db->table('users')
     ->select(['*'])
-    ->where('name', $user['name'])
-    ->where('email', $user['email'])
+    ->where('name', 'R1KO')
+    ->where('email', 'vova.andrienko@mail.ru')
     ->getAll();
 ```
 
 ```php
 $results = $this->db->table('users')
     ->select(['*'])
-    ->where('name', $user['name'])
-    ->orWhere('email', $user['email'])
+    ->where('name', 'R1KO')
+    ->orWhere('email', 'vova.andrienko@mail.ru')
     ->getAll();
 ```
 
