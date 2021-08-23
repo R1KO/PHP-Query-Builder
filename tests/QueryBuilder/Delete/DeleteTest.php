@@ -39,9 +39,9 @@ class DeleteTest extends TestCase
 
         foreach (range(1, $count) as $i) {
             $values[] = [
-                'name'    => 'test '.$i,
-                'email'   => 'test '.$i,
-                'address' => 'test '.$i,
+                'name'    => 'test ' . $i,
+                'email'   => 'test ' . $i,
+                'address' => 'test ' . $i,
             ];
         }
 

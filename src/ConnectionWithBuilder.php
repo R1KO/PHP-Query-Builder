@@ -5,7 +5,7 @@ namespace R1KO\QueryBuilder;
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use R1KO\Database\Connection;
 use R1KO\QueryBuilder\QueryBuilder;
-use R1KO\QueryBuilder\QueryBuilder\Expressions\Raw;
+use R1KO\QueryBuilder\Expressions\Raw;
 
 class ConnectionWithBuilder extends Connection
 {
@@ -21,6 +21,6 @@ class ConnectionWithBuilder extends Connection
 
     public function raw(string $expression): Raw
     {
-        return QueryBuilder::raw($expression);
+        return QueryBuilder::asRaw($expression);
     }
 }

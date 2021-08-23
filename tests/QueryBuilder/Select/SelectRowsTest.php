@@ -176,5 +176,4 @@ class SelectRowsTest extends TestCase
 
         $this->assertCount(5, $rows);
     }
-
 }

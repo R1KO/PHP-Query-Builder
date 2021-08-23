@@ -6,14 +6,16 @@ use Tests\QueryBuilder\TestCase;
 use Tests\Traits\UsersTable;
 use R1KO\Database\Contracts\IConnection;
 
+/*
 class ExampleClass
 {
 
 }
-
+*/
 class SelectObjectTest extends TestCase
 {
     use UsersTable;
+
 /*
     public function testSelectAsStdClass(): void
     {
@@ -91,7 +93,6 @@ class SelectObjectTest extends TestCase
 
         var_dump($db);
         $this->assertNotNull($db);
-
     }
 /*
     public function testSelectDefaultColumns(): void

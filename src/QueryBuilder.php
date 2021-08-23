@@ -405,7 +405,7 @@ class QueryBuilder implements IQueryBuilder
     // https://prowebmastering.ru/php-pdo-konstanty-fetch.html
 
     /**
-     * @param string|RawExpression|null $column
+     * @param string|Raw|null $column
      * @return mixed
      */
     public function getOne($column = null)
@@ -426,7 +426,7 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression|null $column
+     * @param string|Raw|null $column
      * @return mixed
      */
     public function getCol(?string $column = null): array
@@ -445,7 +445,7 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression|null $column
+     * @param string|Raw|null $column
      * @return mixed
      */
     public function getColIterable(?string $column = null): iterable
@@ -500,7 +500,7 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression|null $columnName
+     * @param string|Raw|null $columnName
      * @return array
      */
     public function getAssoc(string $columnName = null): array
@@ -522,7 +522,7 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression|null $columnName
+     * @param string|Raw|null $columnName
      * @return array
      */
     public function getIterable(string $columnName = null): iterable
@@ -565,14 +565,14 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression $columnName
+     * @param string|Raw $columnName
      * @return int|float
      */
     public function sum($columnName)
     {
         if (is_string($columnName)) {
             $columnName = $this->getQuotedColumnName($columnName);
-        } elseif ($columnName instanceof RawExpression) {
+        } elseif ($columnName instanceof Raw) {
             $columnName = $columnName->get();
         }
 
@@ -582,14 +582,14 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression $columnName
+     * @param string|Raw $columnName
      * @return int|float
      */
     public function avg($columnName)
     {
         if (is_string($columnName)) {
             $columnName = $this->getQuotedColumnName($columnName);
-        } elseif ($columnName instanceof RawExpression) {
+        } elseif ($columnName instanceof Raw) {
             $columnName = $columnName->get();
         }
 
@@ -599,14 +599,14 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression $columnName
+     * @param string|Raw $columnName
      * @return int|float
      */
     public function min($columnName)
     {
         if (is_string($columnName)) {
             $columnName = $this->getQuotedColumnName($columnName);
-        } elseif ($columnName instanceof RawExpression) {
+        } elseif ($columnName instanceof Raw) {
             $columnName = $columnName->get();
         }
 
@@ -616,14 +616,14 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression $columnName
+     * @param string|Raw $columnName
      * @return int|float
      */
     public function max($columnName)
     {
         if (is_string($columnName)) {
             $columnName = $this->getQuotedColumnName($columnName);
-        } elseif ($columnName instanceof RawExpression) {
+        } elseif ($columnName instanceof Raw) {
             $columnName = $columnName->get();
         }
 
@@ -809,13 +809,13 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|RawExpression $column
+     * @param string|Raw $column
      * @param string|null $alias
      * @return string
      */
     private function getPreparedColumnName($column, ?string $alias = null): string
     {
-        if ($column instanceof RawExpression) {
+        if ($column instanceof Raw) {
             return $column->get();
         }
 
@@ -1094,7 +1094,7 @@ class QueryBuilder implements IQueryBuilder
 
     public static function asRaw(string $expression): Raw
     {
-        return new RawExpression($expression);
+        return new Raw($expression);
     }
 
     public function raw(string $expression): Raw
