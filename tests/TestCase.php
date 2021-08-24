@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use Faker\Factory;
+use PDO;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use R1KO\Database\Contracts\IConnection;
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
@@ -45,11 +47,11 @@ class TestCase extends BaseTestCase
 
     protected function getDriverName(): string
     {
-        return $this->db->getPDO()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+        return $this->db->getPDO()->getAttribute(PDO::ATTR_DRIVER_NAME);
     }
 
     protected function getFaker()
     {
-        return \Faker\Factory::create();
+        return Factory::create();
     }
 }

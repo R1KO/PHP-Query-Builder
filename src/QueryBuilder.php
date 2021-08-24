@@ -14,19 +14,19 @@ use Closure;
 
 class QueryBuilder implements IQueryBuilder
 {
-    private IConnection $db;
-    private array $bind = [];
-    private string $table;
-    private ?string $alias = null;
-    private array $join    = [];
-    private array $select  = [];
-    private ConditionsBuilder $where   = [];
-    private array $groupBy = [];
-    private ConditionsBuilder $having  = [];
-    private array $order   = [];
-    private ?int $limit;
-    private ?int $offset;
-    private bool $isDistinct = false;
+    private IConnection        $db;
+    private array              $bind       = [];
+    private string             $table;
+    private ?string            $alias      = null;
+    private array              $join       = [];
+    private array              $select     = [];
+    private ?ConditionsBuilder $where      = null;
+    private array              $groupBy    = [];
+    private ?ConditionsBuilder $having     = null;
+    private array              $order      = [];
+    private ?int               $limit;
+    private ?int               $offset;
+    private bool               $isDistinct = false;
     /**
      * @var string|callable
      */

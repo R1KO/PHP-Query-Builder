@@ -1,5 +1,5 @@
 /vendor
 composer.phar
-tests/.phpunit.result.cache
+.phpunit.result.cache
 tests/reports/*
 .env

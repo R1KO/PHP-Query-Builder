@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3c145ed907379d3db4fa710b6acd4d56",
+    "content-hash": "1849991eb4e6aac276eb245b31b97d7b",
     "packages": [
         {
             "name": "r1ko/database-connection",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://gitlab.com/R1KO/database-connection.git",
-                "reference": "205432b36313122943f279c09df8ee707d374c3c"
+                "reference": "be3dde79e8be4e00c90c37f9e3d4e79fe8b32b17"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/R1KO%2Fdatabase-connection/repository/archive.zip?sha=205432b36313122943f279c09df8ee707d374c3c",
-                "reference": "205432b36313122943f279c09df8ee707d374c3c",
+                "url": "https://gitlab.com/api/v4/projects/R1KO%2Fdatabase-connection/repository/archive.zip?sha=be3dde79e8be4e00c90c37f9e3d4e79fe8b32b17",
+                "reference": "be3dde79e8be4e00c90c37f9e3d4e79fe8b32b17",
                 "shasum": ""
             },
             "require": {
@@ -47,11 +47,11 @@
                     "email": "vova.andrienko@mail.ru"
                 }
             ],
-            "description": "Simple PDO Wrapper and Query Builder",
+            "description": "Simple PDO Wrapper",
             "support": {
                 "issues": "https://gitlab.com/api/v4/projects/11433885/issues"
             },
-            "time": "2021-08-23T20:47:41+00:00"
+            "time": "2021-08-23T21:16:21+00:00"
         }
     ],
     "packages-dev": [

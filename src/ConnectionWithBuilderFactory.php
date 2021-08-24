@@ -10,7 +10,7 @@ use PDO;
 
 class ConnectionWithBuilderFactory extends ConnectionFactory
 {
-    public static function factoryConnectionInstance(PDO $pdo, IDriver $driver, array $params): IConnection
+    public function factoryConnectionInstance(PDO $pdo, IDriver $driver, array $params): IConnection
     {
         $connection = new ConnectionWithBuilder($pdo, $driver, $params);
 
