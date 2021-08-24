@@ -20,7 +20,7 @@ class SelectHavingTest extends TestCase
         $results = $this->db->table('users')
             ->select([$this->db->raw('COUNT(address) as addresses')])
             ->groupBy('address')
-            ->having('addresses >', '1')
+            ->having($this->db->raw('COUNT(address)'), '>', 1)
             ->getAll();
 
         $this->assertNotNull($results);

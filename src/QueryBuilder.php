@@ -24,8 +24,8 @@ class QueryBuilder implements IQueryBuilder
     private array              $groupBy    = [];
     private ?ConditionsBuilder $having     = null;
     private array              $order      = [];
-    private ?int               $limit;
-    private ?int               $offset;
+    private ?int               $limit = null;
+    private ?int               $offset = null;
     private bool               $isDistinct = false;
     /**
      * @var string|callable
@@ -338,6 +338,7 @@ class QueryBuilder implements IQueryBuilder
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
+
         $statement = $this->db->execute($query, $bindings);
 
         $result = $statement->fetchColumn();
@@ -712,6 +713,7 @@ class QueryBuilder implements IQueryBuilder
 
         $columns = [];
 
+        // TODO: remake to support Raw
         foreach ($this->select as $index => $column) {
             $alias = null;
             if (is_string($index)) {
@@ -796,13 +798,13 @@ class QueryBuilder implements IQueryBuilder
 
     private function getLimitSql(array &$bindings): ?string
     {
-        if (!$this->limit) {
+        if ($this->limit === null) {
             return null;
         }
 
         $query = ' LIMIT ?';
         $bindings[] = $this->limit;
-        if ($this->offset) {
+        if ($this->offset !== null) {
             $query .= ' OFFSET ?';
             $bindings[] = $this->offset;
         }
@@ -984,7 +986,7 @@ class QueryBuilder implements IQueryBuilder
     private function getWhereBuilder(): ConditionsBuilder
     {
         if (!$this->where) {
-            $this->where = $this->getConditionsBuilder();
+            $this->where = $this->createConditionsBuilder();
         }
 
         return $this->where;
@@ -996,7 +998,7 @@ class QueryBuilder implements IQueryBuilder
     private function getHavingBuilder(): ConditionsBuilder
     {
         if (!$this->having) {
-            $this->having = $this->getConditionsBuilder();
+            $this->having = $this->createConditionsBuilder();
         }
 
         return $this->having;
@@ -1005,9 +1007,9 @@ class QueryBuilder implements IQueryBuilder
     /**
      * @return ConditionsBuilder
      */
-    private function getConditionsBuilder(): ConditionsBuilder
+    private function createConditionsBuilder(): ConditionsBuilder
     {
-        return new ConditionsBuilder();
+        return new ConditionsBuilder($this);
     }
 
     public static function asRaw(string $expression): Raw
@@ -1017,7 +1019,7 @@ class QueryBuilder implements IQueryBuilder
 
     public function raw(string $expression): Raw
     {
-        return static::raw($expression);
+        return static::asRaw($expression);
     }
 
     private function getFlatArray(array $input): array

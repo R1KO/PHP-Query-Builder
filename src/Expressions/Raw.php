@@ -15,4 +15,9 @@ class Raw
     {
         return $this->expression;
     }
+
+    public function __toString(): string
+    {
+        return $this->get();
+    }
 }

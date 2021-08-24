@@ -2,6 +2,7 @@
 
 namespace R1KO\QueryBuilder;
 
+use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use R1KO\QueryBuilder\Expressions\Raw;
 use Closure;
 
@@ -19,9 +20,11 @@ class ConditionsBuilder
      * @var array
      */
     private $bindings = [];
+    private IQueryBuilder $builder;
 
-    final public function __construct()
+    final public function __construct(IQueryBuilder $builder)
     {
+        $this->builder = $builder;
     }
 
     /**
@@ -74,8 +77,6 @@ class ConditionsBuilder
      */
     public function getConditionsSql(array &$bindings = []): ?string
     {
-//        var_dump($this->conditions);
-
         $parts = [];
         $this->bindings = &$bindings;
 
@@ -106,7 +107,7 @@ class ConditionsBuilder
             [$condition] = $condition;
 
             if ($condition instanceof Closure) {
-                $query = new static();
+                $query = new static($this->builder);
                 $condition($query);
 
                 return '(' . $query->getConditionsSql($this->bindings) . ')';
@@ -134,12 +135,35 @@ class ConditionsBuilder
                 [$column, $operator] = explode(' ', $column);
             }
             $column = trim($column);
-            $operator = trim($operator);
 
             return $this->getConditionSql($column, $operator, $value);
         }
 
+        if ($count == 3) {
+            [$column, $operator, $value] = $condition;
+            $column = $this->getPreparedColumn($column);
+            return $this->getConditionSql($column, $operator, $value);
+        }
+
         return '';
+    }
+
+    /**
+     * @param string|Raw $value
+     * @return bool
+     */
+    private function isRaw($value): bool
+    {
+        return $value instanceof Raw;
+    }
+
+    private function getPreparedColumn($column): string
+    {
+        if ($this->isRaw($column)) {
+            return $column->get();
+        }
+
+        return $this->builder->quoteColumn(trim($column));
     }
 
     /**
@@ -150,7 +174,7 @@ class ConditionsBuilder
      */
     private function getConditionSql(string $column, string $operator, $value): string
     {
-        $operator = strtoupper($operator);
+        $operator = strtoupper(trim($operator));
         $value = $this->getValueByOperator($operator, $value);
         return implode(' ', [$column, $operator, $value]);
     }

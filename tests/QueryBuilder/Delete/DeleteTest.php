@@ -51,8 +51,6 @@ class DeleteTest extends TestCase
     {
         $this->createUsersTable();
 
-        $this->createUsersTable();
-
         $this->createRows(5);
 
         $this->assertEquals(5, $this->getCountRows());
