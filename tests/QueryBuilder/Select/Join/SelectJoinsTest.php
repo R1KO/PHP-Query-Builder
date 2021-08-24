@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\QueryBuilder;
+namespace Tests\QueryBuilder\Join;
 
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
