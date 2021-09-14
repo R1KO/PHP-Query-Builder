@@ -21,6 +21,10 @@ class TestCase extends BaseTestCase
         $this->db = $this->createConnection();
     }
 
+    protected function tearDown(): void
+    {
+    }
+
     protected function createConnection(): IConnection
     {
         return ConnectionWithBuilderFactory::create($this->getDefaultParams());

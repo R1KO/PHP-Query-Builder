@@ -90,7 +90,6 @@ class SelectObjectTest extends TestCase
 
         $db = $this->db->getPDO();
 
-        var_dump($db);
         $this->assertNotNull($db);
     }
 /*
