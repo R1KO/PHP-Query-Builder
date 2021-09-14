@@ -188,6 +188,7 @@ class ConditionsBuilder
     {
         switch ($operator) {
             /*
+             // Default case (maybe set $value = NULL)
             case 'IS':
             case 'IS NOT':
                 $conditions = [];

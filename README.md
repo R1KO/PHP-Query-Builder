@@ -48,9 +48,12 @@ $id = $db->table('users')
 public function insertBatch(array $values): int;
 ```
 
-> Insert a lot of data into a table and returns the number of row added
+Insert a lot of data into a table and returns the number of row added
 
-> Example SQL: INSERT INTO (col1, col2, ...colN) VALUES (val1, val2, ...valN), (val1, val2, ...valN), ...;
+Example SQL:
+```sql
+INSERT INTO (col1, col2, ...colN) VALUES (val1, val2, ...valN), (val1, val2, ...valN), ...;
+```
 
 ```php
 $values = [
@@ -76,9 +79,12 @@ $count = $db->table('users')
 public function insertMass(array $values, bool $useTransaction = false): array;
 ```
 
-> Insert a set of data into a table as a prepared query and returns an array of added row IDs
+Insert a set of data into a table as a prepared query and returns an array of added row IDs
 
-> Example SQL: INSERT INTO (col1, col2, ...colN) VALUES (?, ?, ...);
+Example SQL:
+```sql
+INSERT INTO (col1, col2, ...colN) VALUES (?, ?, ...);
+```
 
 ```php
 $values = [
@@ -131,7 +137,7 @@ $idsIterator = $db->table('users')
 
 ## Delete
 
-> Delete rows conditionally and returns the number of rows deleted
+Delete rows conditionally and returns the number of rows deleted
 
 ```php
 $count = $db->table('users')
@@ -141,7 +147,7 @@ $count = $db->table('users')
 
 ## Update
 
-> Update rows conditionally and returns the number of rows modified
+Update rows conditionally and returns the number of rows modified
 
 ```php
 $count = $db->table('users')
@@ -154,7 +160,7 @@ $count = $db->table('users')
 
 ### `getAll`
 
-> Gets an associative array of rows
+Gets an associative array of rows
 
 ```php
 $id = $db->table('users')
@@ -177,8 +183,8 @@ $id = $db->table('users')
 
 ### `getAssoc`
 
-> Gets an associative array of row whose keys are the specified column
-> If column is null - assoc by first column of select
+Gets an associative array of row whose keys are the specified column
+If column is null - assoc by first column of select
 
 ```php
 $id = $db->table('users')
@@ -201,7 +207,7 @@ $id = $db->table('users')
 
 ### `getIterable`
 
-> Get rows from the result one by one
+Get rows from the result one by one
 
 ```php
 $users = $db->table('users')
@@ -226,7 +232,7 @@ foreach ($users as $user) {
 
 ```
 
-> Get rows from the result one by one with associated key
+Get rows from the result one by one with associated key
 
 ```php
 $users = $db->table('users')
@@ -254,7 +260,7 @@ foreach ($users as $id => $user) {
 
 ### `getRow`
 
-> Gets an associative array of one row
+Gets an associative array of one row
 
 ```php
 $id = $db->table('users')
@@ -364,6 +370,7 @@ $columns = [
     $db->raw('address AS user_address'),
     // or
     QueryBuilder::asRaw('address AS user_address'),
+    // TODO: subquery
 ];
 $results = $db->table('users')
     ->select($columns)
@@ -378,11 +385,29 @@ $results = $db->table('users')
 public function where(string $column, array|string|int|bool $value);
 public function where(string $column, string $operator, array|string|int|bool $value);
 public function where(string $column, Closure $value);
+// WHERE column operator (condition|subquery)
+
 public function where(Closure $condition);
+// WHERE (condition)
+
 public function where(Raw $expression);
+
 public function where(array $conditions);
+// WHERE [condition 1] AND [condition 2] AND [condition N] ...
 public function whereAnd(array $conditions);
+// WHERE [condition 1] AND [condition 2] AND [condition N] ...
 public function whereOr(array $conditions);
+// WHERE [condition 1] OR [condition 2] OR [condition N] ...
+
+// TODO
+public function whereColumn
+public function whereExists
+
+upsert
+increment
+decrement
+
+
 ```
 
 ```php
@@ -434,40 +459,80 @@ $results = $this->db->table('users')
     ->getAll();
 ```
 
-> SELECT * FROM users WHERE email = ? AND (address = ? OR address = ?)
+```sql
+SELECT * FROM users WHERE email = ? AND (address = ? OR address = ?)
+```
 
+#### Comparison Operators
 
+##### Equals
 ```php
-// TODO: 
 ->where('column', 'value') // column = 'value'
 ->where('column !=', 'value') // column != 'value'
+
+// TODO: 
 ->whereNot('column', 'value') // column != 'value'
+```
+
+##### Comparison
+```php
 ->where('column >', 'value') // column > 'value'
 ->where('column <', 'value') // column < 'value'
+->where('column >=', 'value') // column >= 'value'
+->where('column <=', 'value') // column < ='value'
 
+// TODO: 
+->whereGreater('column >', 'value') // column > 'value'
+->whereLess('column', 'value') // column < 'value'
+->whereGreaterOrEqual('column >', 'value') // column >= 'value'
+->whereLessOrEqual('column', 'value') // column <= 'value'
+```
+
+##### NULL
+```php
 ->where('column IS', 'NULL') // column IS NULL
 ->where('column IS NOT', 'NULL') // column IS NOT NULL
+
+// TODO: 
 ->whereNull('column', 'NULL') // column IS NULL
 ->whereNotNull('column', 'NULL') // column IS NOT NULL
+```
 
+##### BETWEEN
+```php
 ->where('column between', ['value_from', 'value_to']) // column BETWEEN 'value_from' AND 'value_to'
 ->where('column not between', ['value_from', 'value_to']) // column NOT BETWEEN 'value_from' AND 'value_to'
+
+// TODO: 
 ->whereBetween('column', ['value_from', 'value_to']) // column BETWEEN 'value_from' AND 'value_to'
 ->whereNotBetween('column', ['value_from', 'value_to']) // column NOT BETWEEN 'value_from' AND 'value_to'
+```
 
+##### IN
+```php
 ->where('column in', ['value1', 'value2']) // column IN ('value1', 'value2')
 ->where('column not in', ['value1', 'value2']) // column IN ('value1', 'value2')
+
+// TODO:
 ->whereIn('column', ['value1', 'value2']) // column IN ('value1', 'value2')
 ->whereNotIn('column', ['value1', 'value2']) // column IN ('value1', 'value2')
+```
 
+##### LIKE
+```php
 ->where('column like', 'value1') // column LIKE 'value1'
 ->where('column not like', 'value1') // column NOT LIKE 'value1'
 ->where('column ilike', 'value1') // column ILIKE 'value1'
+
+// TODO: 
 ->whereLike('column like', 'value1') // column LIKE 'value1'
 ->whereNotLike('column not like', 'value1') // column NOT LIKE 'value1'
 ->whereIlike('column ilike', 'value1') // column ILIKE 'value1'
 
+```
 
+#### JSON
+```php
 // TODO: JSON
 // https://laravel.com/docs/8.x/queries#json-where-clauses
 
@@ -512,7 +577,10 @@ $id = $db->table('users')
     ->getAll();
 ```
 
-> TODO: orderByRaw
+```php
+
+// TODO: orderByRaw
+```
 
 ## Grouping
 
@@ -585,8 +653,6 @@ $posts = $this->db->table('posts')
 
 ## Aggregate
 
-> TODO ...
-
 ```php
 $countCompletedOrders = $this->db->table('orders')
     ->where('status', 'completed')
@@ -603,7 +669,6 @@ $countDeletedOrders = $this->db->table('orders')
     ->distinct()
     >count('id_product');
 ```
-
 
 ```php
 $totalCompletedOrdersPrice = $this->db->table('orders')
@@ -631,5 +696,10 @@ $maxCompletedOrdersPrice = $this->db->table('orders')
 
 ## Raw Expressions
 
-> TODO ...
+```php
+$db->raw('COUNT(amount)')
+$db->raw('IF(deleted_at IS NULL, 1, 0)')
+QueryBuilder::asRaw('address AS user_address'),
+$db->builder()->raw('address AS user_address'),
+```
 
