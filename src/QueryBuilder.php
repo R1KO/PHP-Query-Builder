@@ -15,21 +15,21 @@ use Closure;
 class QueryBuilder implements IQueryBuilder
 {
     private IConnection $db;
-    private array       $bind = [];
+    private array $bind = [];
     /**
      * @var string|callable
      */
-    private                    $table;
-    private ?string            $alias      = null;
-    private array              $join       = [];
-    private array              $select     = [];
-    private ?ConditionsBuilder $where      = null;
-    private array              $groupBy    = [];
-    private ?ConditionsBuilder $having     = null;
-    private array              $order      = [];
-    private ?int               $limit      = null;
-    private ?int               $offset     = null;
-    private bool               $isDistinct = false;
+    private $table;
+    private ?string $alias = null;
+    private array $join = [];
+    private array $select = [];
+    private ?ConditionsBuilder $where = null;
+    private array $groupBy = [];
+    private ?ConditionsBuilder $having = null;
+    private array $order = [];
+    private ?int $limit = null;
+    private ?int $offset = null;
+    private bool $isDistinct = false;
     /**
      * @var string|callable
      */
@@ -112,6 +112,11 @@ class QueryBuilder implements IQueryBuilder
         return $this->getQuotedTableName($this->getCurrentTable(), $this->alias);
     }
 
+    protected function createSelfInstance(): IQueryBuilder
+    {
+        return new self($this->db);
+    }
+
     protected function getSelectFromTableName(array &$bindings): string
     {
         $table = $this->getCurrentTable();
@@ -123,7 +128,7 @@ class QueryBuilder implements IQueryBuilder
             throw new BuilderException('No table alias specified!');
         }
 
-        $builder = new static($this->db);
+        $builder = $this->createSelfInstance();
         $table($builder);
 
         $sql = $builder->getSelectSql($bindings);
