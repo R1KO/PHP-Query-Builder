@@ -9,7 +9,7 @@ use Tests\Traits\UsersTable;
 class SelectColumnsTest extends TestCase
 {
     use UsersTable;
-/*
+
     public function testSelectAllColumns(): void
     {
         $this->createUsersTable();
@@ -20,13 +20,14 @@ class SelectColumnsTest extends TestCase
             ->getAll();
 
 
-        $columns = ['id', 'name', 'address'];
+        $columns = ['id', 'name', 'address', 'email'];
         $this->assertNotNull($results);
         $this->assertCount(5, $results);
         $firstRow = array_shift($results);
         $this->assertCount(count($columns), $firstRow);
         $this->assertArrayHasKey('name', $firstRow);
         $this->assertArrayHasKey('address', $firstRow);
+        $this->assertArrayHasKey('email', $firstRow);
         $this->assertArrayHasKey('id', $firstRow);
     }
 
@@ -38,13 +39,14 @@ class SelectColumnsTest extends TestCase
         $results = $this->db->table('users')
             ->getAll();
 
-        $columns = ['id', 'name', 'address'];
+        $columns = ['id', 'name', 'address', 'email'];
         $this->assertNotNull($results);
         $this->assertCount(5, $results);
         $firstRow = array_shift($results);
         $this->assertCount(count($columns), $firstRow);
         $this->assertArrayHasKey('name', $firstRow);
         $this->assertArrayHasKey('address', $firstRow);
+        $this->assertArrayHasKey('email', $firstRow);
         $this->assertArrayHasKey('id', $firstRow);
     }
 
@@ -73,7 +75,7 @@ class SelectColumnsTest extends TestCase
         $this->createUsersTable();
         $this->createUsers(5);
 
-        $columns = ['id', 'name' => 'user_name', 'address'];
+        $columns = ['id', 'user_name' => 'name', 'address'];
 
         $results = $this->db->table('users')
             ->select($columns)
@@ -214,7 +216,6 @@ class SelectColumnsTest extends TestCase
         $this->assertNotNull($results);
         $this->assertCount(5, $results);
     }
-*/
 
     public function testSelectSubqueryColumn(): void
     {
@@ -255,8 +256,7 @@ class SelectColumnsTest extends TestCase
                 $query->select(['address'])
                     ->from('users', 'sub_users')
                     ->where($this->db->raw('sub_users.id = users.id'))
-                    ->limit(1)
-                    ->getCol();
+                    ->limit(1);
             },
         ];
         $results = $this->db->table('users')

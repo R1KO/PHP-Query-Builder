@@ -67,8 +67,7 @@ class SelectFromTest extends TestCase
             ->from(function (IQueryBuilder $query) {
                 $query->table('users')
                     ->select(['name', 'address'])
-                    ->limit(3)
-                    ->getAll();
+                    ->limit(3);
             })
             ->select(['*'])
             ->getAll();

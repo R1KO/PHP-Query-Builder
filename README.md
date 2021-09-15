@@ -54,7 +54,7 @@ Insert a lot of data into a table and returns the number of row added
 
 Example SQL:
 ```sql
-INSERT INTO (col1, col2, ...colN) VALUES (val1, val2, ...valN), (val1, val2, ...valN), ...;
+INSERT INTO table (col1, col2, ...colN) VALUES (val1, val2, ...valN), (val1, val2, ...valN), ...;
 ```
 
 ```php
@@ -85,7 +85,7 @@ Insert a set of data into a table as a prepared query and returns an array of ad
 
 Example SQL:
 ```sql
-INSERT INTO (col1, col2, ...colN) VALUES (?, ?, ...);
+INSERT INTO table (col1, col2, ...colN) VALUES (?, ?, ...);
 ```
 
 ```php
@@ -146,6 +146,31 @@ $count = $db->table('users')
     ->where('status', 'outdated')
     ->delete();
 ```
+
+
+
+### Insert from other table
+
+```php
+public function insertFrom(array $columns, callable $from): void;
+```
+
+```php
+$columns = ['id', 'name', 'address'];
+$db->table('users')
+    ->insertFrom(
+        $columns,
+        function (IQueryBuilder $query) use ($columns) {
+            $query->select($columns)
+                ->from('clients');
+    });
+```
+
+Example SQL:
+```sql
+INSERT INTO table (col1, col2, ...colN) SELECT col1, col2, ...colN FROM others_table;
+```
+
 
 ## Update
 
@@ -342,8 +367,7 @@ $results = $this->db->builder()
             ->from(function (IQueryBuilder $query) {
                 $query->table('users')
                     ->select(['name', 'address'])
-                    ->limit(3)
-                    ->getAll();
+                    ->limit(3);
             })
             ->select(['*'])
             ->getAll();

@@ -2,6 +2,7 @@
 
 namespace Tests\QueryBuilder\Insert;
 
+use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
 use R1KO\Database\Contracts\IConnection;
@@ -9,7 +10,7 @@ use R1KO\Database\Contracts\IConnection;
 class InsertTest extends TestCase
 {
     use UsersTable;
-
+/*
     public function testInsertValues(): void
     {
         $this->createUsersTable();
@@ -43,7 +44,6 @@ class InsertTest extends TestCase
         ];
         $result = $this->db->table('users')
             ->insertBatch($values);
-
 
         $this->assertNotNull($result);
         $this->assertEquals(count($values), $result);
@@ -213,5 +213,29 @@ class InsertTest extends TestCase
         }
 
         $this->assertCount(count($valuesSet), $results);
+    }
+*/
+    public function testInsertFromOtherTable(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
+
+        $columns = ['name', 'email', 'address'];
+
+        $this->db->table('users')
+            ->insertFrom(
+                $columns,
+                function (IQueryBuilder $query) use ($columns) {
+                    $query->select($columns)
+                        ->from('users');
+                });
+
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(10, $results);
     }
 }

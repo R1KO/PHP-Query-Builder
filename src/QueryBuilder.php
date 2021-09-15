@@ -192,52 +192,35 @@ class QueryBuilder implements IQueryBuilder
         );
     }
 
-    public function update(array $values): int
-    {
-        $bindings = [];
-        $fields = [];
 
-        foreach ($values as $column => $value) {
-            $fields[] = sprintf('%s = ?', $this->quoteColumn($column));
-            $bindings[] = $value;
+    /**
+     * @param array $columns
+     * @param callable $from
+     * @return void
+     */
+    public function insertFrom(array $columns, callable $from): void
+    {
+        $builder = $this->createSelfInstance();
+        $from($builder);
+
+        $bindings = &$this->bind;
+        $sql = $builder->getSelectSql($bindings);
+
+        $columnNames = [];
+
+        foreach ($columns as $column) {
+            $columnNames[] = $this->quoteColumn($column);
         }
 
-        $query = sprintf(
-            'UPDATE %s SET %s',
+        $sql = sprintf(
+            'INSERT INTO %s (%s) %s',
             $this->quoteTable($this->table),
-            implode(', ', $fields)
+            implode(', ', $columnNames),
+            $sql
         );
 
-        $whereSql = $this->getWhereSql($bindings);
-
-        if ($whereSql) {
-            $query .= $whereSql;
-        }
-
-        $this->setSql($query);
-        $statement = $this->db->execute($query, $bindings);
-
-        return $statement->rowCount();
-    }
-
-    public function delete(): int
-    {
-        $query = sprintf(
-            'DELETE FROM %s',
-            $this->quoteTable($this->table),
-        );
-
-        $bindings = [];
-        $whereSql = $this->getWhereSql($bindings);
-
-        if ($whereSql) {
-            $query .= $whereSql;
-        }
-
-        $this->setSql($query);
-        $statement = $this->db->execute($query, $bindings);
-
-        return $statement->rowCount();
+        $this->setSql($sql);
+        $this->db->execute($sql, $bindings);
     }
 
     public function insertBatch(array $values): int
@@ -324,6 +307,54 @@ class QueryBuilder implements IQueryBuilder
         }
 
         yield from $this->db->executeIterable($query, $iterator);
+    }
+
+    public function update(array $values): int
+    {
+        $bindings = [];
+        $fields = [];
+
+        foreach ($values as $column => $value) {
+            $fields[] = sprintf('%s = ?', $this->quoteColumn($column));
+            $bindings[] = $value;
+        }
+
+        $query = sprintf(
+            'UPDATE %s SET %s',
+            $this->quoteTable($this->table),
+            implode(', ', $fields)
+        );
+
+        $whereSql = $this->getWhereSql($bindings);
+
+        if ($whereSql) {
+            $query .= $whereSql;
+        }
+
+        $this->setSql($query);
+        $statement = $this->db->execute($query, $bindings);
+
+        return $statement->rowCount();
+    }
+
+    public function delete(): int
+    {
+        $query = sprintf(
+            'DELETE FROM %s',
+            $this->quoteTable($this->table),
+        );
+
+        $bindings = [];
+        $whereSql = $this->getWhereSql($bindings);
+
+        if ($whereSql) {
+            $query .= $whereSql;
+        }
+
+        $this->setSql($query);
+        $statement = $this->db->execute($query, $bindings);
+
+        return $statement->rowCount();
     }
 
     public function select(array $columns): IQueryBuilder
@@ -767,9 +798,6 @@ class QueryBuilder implements IQueryBuilder
         if ($limit) {
             $query .= $limit;
         }
-
-
-        var_dump($query, $bindings);
 
         return $query;
     }
