@@ -30,7 +30,7 @@ class SelectJoinsTest extends TestCase
         $this->doPreparePosts();
 
         $results = $this->db->table('posts')
-            ->select(['posts.*', 'users.name' => 'author_name'])
+            ->select(['posts.*', 'author_name' => 'users.name'])
             ->join('users', ['posts.id_user' => 'users.id'])
             ->getAll();
 
@@ -50,7 +50,7 @@ class SelectJoinsTest extends TestCase
         $this->doPreparePosts();
 
         $results = $this->db->table('posts')
-            ->select(['posts.*', 'authors.name' => 'author_name'])
+            ->select(['posts.*', 'author_name' => 'authors.name'])
             ->join(['users' => 'authors'], ['posts.id_user' => 'authors.id'])
             ->getAll();
 
@@ -71,7 +71,7 @@ class SelectJoinsTest extends TestCase
         $this->createPosts(2);
 
         $results = $this->db->table('posts')
-            ->select(['posts.*', 'users.name' => 'author_name'])
+            ->select(['posts.*', 'author_name' => 'users.name'])
             ->leftJoin('users', ['posts.id_user' => 'users.id'])
             ->getAll();
 
@@ -107,7 +107,7 @@ class SelectJoinsTest extends TestCase
         $this->createPosts(2);
 
         $results = $this->db->table('posts')
-            ->select(['posts.*', 'users.name' => 'author_name'])
+            ->select(['posts.*', 'author_name' => 'users.name'])
             ->rightJoin('users', ['posts.id_user' => 'users.id'])
             ->getAll();
 
