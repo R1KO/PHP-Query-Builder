@@ -329,14 +329,24 @@ $id = $db->table('users')
 ### FROM Table Alias
 
 ```php
-$id = $db->table('users', 'students') // users AS students
+$results = $db->table('users', 'students') // users AS students
     ->select(['*'])
     ->getAll();
 
-$id = $db->builder()
+$results = $db->builder()
     ->from('users', 'students') // users AS students
     ->select(['*'])
     ->getAll();
+
+$results = $this->db->builder()
+            ->from(function (IQueryBuilder $query) {
+                $query->table('users')
+                    ->select(['name', 'address'])
+                    ->limit(3)
+                    ->getAll();
+            })
+            ->select(['*'])
+            ->getAll();
 ```
 
 ### Columns Aliases
@@ -383,7 +393,14 @@ $columns = [
     $db->raw('address AS user_address'),
     // or
     QueryBuilder::asRaw('address AS user_address'),
-    // TODO: subquery
+    // or subquery
+    'user_address' => function (IQueryBuilder $query) {
+        [$query->select(['address'])
+            ->from('users', 'sub_users')
+            ->where($this->db->raw('sub_users.id = users.id'))
+            ->limit(1)
+            ->getCol();
+    },
 ];
 $results = $db->table('users')
     ->select($columns)

@@ -2,6 +2,7 @@
 
 namespace Tests\QueryBuilder;
 
+use R1KO\QueryBuilder\Exceptions\BuilderException;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
 
@@ -86,6 +87,16 @@ class SelectRowsTest extends TestCase
         $this->assertNotNull($results);
         $this->assertCount(5, $results);
         $this->assertIsString($results[0]);
+    }
+
+    public function testSelectNothingColumn(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
+
+        $this->expectException(BuilderException::class);
+        $results = $this->db->table('users')
+            ->getCol();
     }
 
     public function testSelectOneValue(): void

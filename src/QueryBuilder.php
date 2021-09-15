@@ -396,7 +396,7 @@ class QueryBuilder implements IQueryBuilder
         if ($column !== null) {
             $this->select([$column]);
         }
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -411,15 +411,17 @@ class QueryBuilder implements IQueryBuilder
 
     /**
      * @param string|Raw|null $column
-     * @return mixed
+     * @return array
      */
     public function getCol(?string $column = null): array
     {
         if ($column !== null) {
             $this->select([$column]);
+        } else if (count($this->select) === 0){
+            throw new BuilderException('No column specified');
         }
 
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -436,9 +438,11 @@ class QueryBuilder implements IQueryBuilder
     {
         if ($column !== null) {
             $this->select([$column]);
+        } else if (count($this->select) === 0){
+            throw new BuilderException('No column specified');
         }
 
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -454,8 +458,8 @@ class QueryBuilder implements IQueryBuilder
      */
     public function getRow(): ?array
     {
-        $this->limit = 1;
-        $bindings = [];
+        $this->limit(1);
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -472,7 +476,7 @@ class QueryBuilder implements IQueryBuilder
      */
     public function getAll(): ?array
     {
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -490,7 +494,7 @@ class QueryBuilder implements IQueryBuilder
     public function getAssoc(string $columnName = null): array
     {
         // TODO: check if column exists in select (or alias)
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -513,7 +517,7 @@ class QueryBuilder implements IQueryBuilder
     public function getIterable(string $columnName = null): iterable
     {
         // TODO: check if column exists in select (or alias)
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -718,7 +722,7 @@ class QueryBuilder implements IQueryBuilder
 
     private function getSelectSql(array &$bindings = array()): string
     {
-        $columns = $this->getSelectColumnsSql();
+        $columns = $this->getSelectColumnsSql($bindings);
 
         if ($this->isDistinct) {
             $columns = 'DISTINCT ' . $columns;
@@ -778,12 +782,9 @@ class QueryBuilder implements IQueryBuilder
 
         $columns = [];
 
-        // TODO: remake to support Raw
-        foreach ($this->select as $index => $column) {
-            $alias = null;
-            if (is_string($index)) {
-                $alias = $column;
-                $column = $index;
+        foreach ($this->select as $alias => $column) {
+            if (!is_string($alias)) {
+                $alias = null;
             }
 
             $columns[] = $this->getPreparedColumnName($column, $alias);
@@ -793,20 +794,37 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|Raw $column
+     * @param string|callable|Raw $column
      * @param string|null $alias
      * @return string
      */
     private function getPreparedColumnName($column, ?string $alias = null): string
     {
-        if ($column instanceof Raw) {
-            return $column->get();
-        }
-
-        // TODO: add subquery support
-
         if (is_string($column)) {
             return $this->getQuotedColumnName($column, $alias);
+        }
+
+        if ($column instanceof Raw) {
+            $columnName = $column->get();
+
+            if ($alias !== null) {
+                $columnName .= ' AS ' . $this->quoteColumn($alias);
+            }
+
+            return $columnName;
+        }
+
+        if (is_callable($column)) {
+            $builder = $this->createSelfInstance();
+            $column($builder);
+
+            $sql = $builder->getSelectSql($this->bind);
+
+            if ($alias !== null) {
+                return sprintf('(%s) AS %s', $sql, $alias);
+            }
+
+            return sprintf('(%s)', $sql,);
         }
 
         return '';
