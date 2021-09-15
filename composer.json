@@ -12,7 +12,8 @@
     "prefer-stable": true,
     "require": {
         "php": ">=7.4",
-        "r1ko/database-connection": "^1.0"
+        "r1ko/database-connection": "^1.0",
+        "ext-pdo":"*"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0",

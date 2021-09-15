@@ -164,22 +164,39 @@ class QueryBuilder implements IQueryBuilder
         return $this->quoteColumn($this->table);
     }
 
-    public function insert(array $values): int
+    public function insert(array $values): void
     {
-        $query = $this->getInsertSql(array_keys($values));
+        $bindings = &$this->bind;
+        $query = $this->getInsertSql(array_keys($values), $bindings);
 
         $this->setSql($query);
-        $this->db->execute($query, $values);
-
-        return $this->db->getLastInsertId();
+        $this->db->execute($query, $bindings);
     }
 
-    private function getInsertSql(array $schema): string
+    /**
+     * @param array $values
+     * @param string|null $aiColumn
+     * @return int
+     */
+    public function insertGetId(array $values, ?string $aiColumn = null): int
+    {
+        $bindings = &$this->bind;
+        $query = $this->getInsertSql(array_keys($values), $bindings);
+
+        $this->setSql($query);
+        $this->db->execute($query, $bindings);
+
+        $id = $this->db->getLastInsertId($aiColumn);
+
+        return is_numeric($id) ? (int) $id : $id;
+    }
+
+    private function getInsertSql(array $schema, array &$bindings = []): string
     {
         $columns = [];
         $placeholders = [];
 
-        foreach ($schema as $column) {
+        foreach ($schema as $column => $value) {
             $columns[] = $this->quoteColumn($column);
             $placeholders[] = $this->getPlaceholder($column);
         }
@@ -191,7 +208,38 @@ class QueryBuilder implements IQueryBuilder
             implode(', ', $placeholders)
         );
     }
+    /*
+    private function getInsertSql(array $schema, array &$bindings = []): string
+    {
+        $columns = [];
+        $placeholders = [];
 
+        foreach ($schema as $column => $value) {
+            $columns[] = $this->quoteColumn($column);
+
+            if (!is_callable($value)) {
+                $placeholder = $this->getPlaceholder($column);
+                $placeholders[] = $placeholder;
+                $bindings[$placeholder] = $value;
+                continue;
+            }
+
+            $builder = $this->createSelfInstance();
+            $value($builder);
+
+            $sql = $builder->getSelectSql($bindings);
+
+            $placeholders[] = sprintf('(%s)', $sql);
+        }
+
+        return sprintf(
+            'INSERT INTO %s (%s) VALUES (%s);',
+            $this->quoteTable($this->table),
+            implode(', ', $columns),
+            implode(', ', $placeholders)
+        );
+    }
+*/
 
     /**
      * @param array $columns

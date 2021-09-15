@@ -10,7 +10,7 @@ use R1KO\Database\Contracts\IConnection;
 class InsertTest extends TestCase
 {
     use UsersTable;
-/*
+
     public function testInsertValues(): void
     {
         $this->createUsersTable();
@@ -20,10 +20,15 @@ class InsertTest extends TestCase
             'email'   => 'test',
             'address' => 'test',
         ];
-        $id = $this->db->table('users')
+        $this->db->table('users')
             ->insert($values);
 
-        $this->assertNotNull($id);
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(1, $results);
     }
 
     public function testInsertValuesBatch(): void
@@ -214,7 +219,7 @@ class InsertTest extends TestCase
 
         $this->assertCount(count($valuesSet), $results);
     }
-*/
+
     public function testInsertFromOtherTable(): void
     {
         $this->createUsersTable();
@@ -228,8 +233,8 @@ class InsertTest extends TestCase
                 function (IQueryBuilder $query) use ($columns) {
                     $query->select($columns)
                         ->from('users');
-                });
-
+                }
+            );
 
         $results = $this->db->table('users')
             ->select(['*'])
@@ -238,4 +243,34 @@ class InsertTest extends TestCase
         $this->assertNotNull($results);
         $this->assertCount(10, $results);
     }
+/*
+    public function testInsertWithSubqueries(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(1);
+
+        $values = [
+            'name'    => 'test',
+            'email'   => function (IQueryBuilder $query) {
+                $query->select(['email'])
+                    ->from('users')
+                    ->limit(1);
+            },
+            'address' => function (IQueryBuilder $query) {
+                $query->select(['address'])
+                    ->from('users')
+                    ->limit(1);
+            },
+        ];
+        $this->db->table('users')
+            ->insert($values);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(2, $results);
+    }
+*/
 }

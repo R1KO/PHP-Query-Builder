@@ -28,7 +28,7 @@ $db = ConnectionWithBuilderFactory::create($params);
 ### Insert one row
 
 ```php
-public function insert(array $values): int;
+public function insert(array $values): void;
 ```
 
 Insert data into a table and returns the ID of the added row
@@ -41,6 +41,22 @@ $values = [
 ];
 $id = $db->table('users')
     ->insert($values);
+```
+
+```php
+public function insertGetId(array $values): int;
+```
+
+Insert data into a table and returns the ID of the added row
+
+```php
+$values = [
+    'name'    => 'test',
+    'email'   => 'test',
+    'address' => 'test',
+];
+$id = $db->table('users')
+    ->insertGetId($values);
 ```
 
 
@@ -78,7 +94,8 @@ $count = $db->table('users')
 ### Insert group of rows
 
 ```php
-public function insertMass(array $values, bool $useTransaction = false): array;
+public function insertMass(array $values, bool $useTransaction = false): int;
+public function insertMassGetId(array $values, bool $useTransaction = false): array;
 ```
 
 Insert a set of data into a table as a prepared query and returns an array of added row IDs
@@ -101,14 +118,17 @@ $values = [
         'address' => 'test 2',
     ],
 ];
-$ids = $db->table('users')
+$count = $db->table('users')
     ->insertMass($values);
+$ids = $db->table('users')
+    ->insertMassGetId($values);
 ```
 
 ### Iterable Insert
 
 ```php
-public function insertIterable(array $schema, iterable $iterator, bool $useTransaction = false): iterable;
+public function insertIterable(array $schema, iterable $iterator, bool $useTransaction = false): void;
+public function insertIterableGetId(array $schema, iterable $iterator, bool $useTransaction = false): iterable;
 ```
 
 ```php
@@ -133,20 +153,12 @@ $iterator = function (): iterable {
     ];
 };
 
-$idsIterator = $db->table('users')
+$db->table('users')
     ->insertIterable($schema, $iterator);
-``
 
-## Delete
-
-Delete rows conditionally and returns the number of rows deleted
-
-```php
-$count = $db->table('users')
-    ->where('status', 'outdated')
-    ->delete();
+$idsIterator = $db->table('users')
+    ->insertIterableGetId($schema, $iterator);
 ```
-
 
 
 ### Insert from other table
@@ -169,6 +181,29 @@ $db->table('users')
 Example SQL:
 ```sql
 INSERT INTO table (col1, col2, ...colN) SELECT col1, col2, ...colN FROM others_table;
+```
+
+
+### Insert with subquery
+```php
+$values = [
+    'name'    => 'test',
+    'email'   => 'test',
+    'address' => function (IQueryBuilder),
+];
+$id = $db->table('users')
+    ->insert($values);
+```
+
+
+## Delete
+
+Delete rows conditionally and returns the number of rows deleted
+
+```php
+$count = $db->table('users')
+    ->where('status', 'outdated')
+    ->delete();
 ```
 
 
