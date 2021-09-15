@@ -2,6 +2,7 @@
 
 namespace Tests\QueryBuilder;
 
+use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
 

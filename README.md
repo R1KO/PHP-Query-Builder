@@ -2,6 +2,7 @@
 
 [![pipeline status](https://gitlab.com/R1KO/php-query-builder/badges/master/pipeline.svg)](https://gitlab.com/R1KO/php-query-builder/-/commits/master) [![coverage report](https://gitlab.com/R1KO/php-query-builder/badges/master/coverage.svg)](https://gitlab.com/R1KO/php-query-builder/-/commits/master)
 
+
 ## Connection with use QueryBuilder
 
 ```php
@@ -20,16 +21,17 @@ $params = [
 $db = ConnectionWithBuilderFactory::create($params);
 ```
 
+---
 
-## QueryBuilder
+## Inserts
 
-### Insert
+### Insert one row
 
 ```php
 public function insert(array $values): int;
 ```
 
-> Insert data into a table and returns the ID of the added row
+Insert data into a table and returns the ID of the added row
 
 ```php
 $values = [
@@ -42,7 +44,7 @@ $id = $db->table('users')
 ```
 
 
-### Batch Insert
+### Insert many rows
 
 ```php
 public function insertBatch(array $values): int;
@@ -73,7 +75,7 @@ $count = $db->table('users')
 ```
 
 
-### Mass Insert
+### Insert group of rows
 
 ```php
 public function insertMass(array $values, bool $useTransaction = false): array;
@@ -133,7 +135,7 @@ $iterator = function (): iterable {
 
 $idsIterator = $db->table('users')
     ->insertIterable($schema, $iterator);
-```
+``
 
 ## Delete
 
@@ -154,7 +156,6 @@ $count = $db->table('users')
     ->where('status', 'outdated')
     ->update(['status' => 'deleted']);
 ```
-
 
 ## Select
 
@@ -325,15 +326,27 @@ $id = $db->table('users')
     ->getOne();
 ```
 
+### FROM Table Alias
 
-### Aliases
+```php
+$id = $db->table('users', 'students') // users AS students
+    ->select(['*'])
+    ->getAll();
+
+$id = $db->builder()
+    ->from('users', 'students') // users AS students
+    ->select(['*'])
+    ->getAll();
+```
+
+### Columns Aliases
 
 ```php
 $id = $db->table('users')
     ->select([
-        'id' => 'user_id', 
+         'user_id' => 'id', // id AS user_id
         'status', 
-        $db->raw('IF(deleted_at IS NULL, 1, 0)') => 'is_active'
+        'is_active' => $db->raw('IF(deleted_at IS NULL, 1, 0)'), // IF(deleted_at IS NULL, 1, 0) AS is_active
     ])
     ->getAll();
 ```
@@ -377,7 +390,7 @@ $results = $db->table('users')
     ->getAll();
 ```
 
-## Conditions
+### Conditions
 
 > TODO ...
 > 
@@ -544,7 +557,7 @@ SELECT * FROM users WHERE email = ? AND (address = ? OR address = ?)
 // chunkById
 ```
 
-## Limit & Offset
+### Limit & Offset
 
 ```php
 
@@ -554,7 +567,7 @@ $id = $db->table('users')
     ->getAll();
 ```
 
-## Sorting
+### Sorting
 
 ```php
 
@@ -582,7 +595,7 @@ $id = $db->table('users')
 // TODO: orderByRaw
 ```
 
-## Grouping
+### Grouping
 
 ```php
 
@@ -605,12 +618,11 @@ $id = $db->table('users')
     ->getAll();
 ```
 
-## Having
+### Having
 
 > TODO ...
 
-
-## Joins
+### Joins
 
 > TODO ...
 
@@ -651,7 +663,7 @@ $posts = $this->db->table('posts')
 
 // TODO: additional conditions
 
-## Aggregate
+### Aggregate
 
 ```php
 $countCompletedOrders = $this->db->table('orders')
