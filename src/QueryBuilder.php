@@ -448,7 +448,7 @@ class QueryBuilder implements IQueryBuilder
     {
         if ($column !== null) {
             $this->select([$column]);
-        } else if (count($this->select) === 0){
+        } elseif (count($this->select) === 0) {
             throw new BuilderException('No column specified');
         }
 
@@ -469,7 +469,7 @@ class QueryBuilder implements IQueryBuilder
     {
         if ($column !== null) {
             $this->select([$column]);
-        } else if (count($this->select) === 0){
+        } elseif (count($this->select) === 0) {
             throw new BuilderException('No column specified');
         }
 
@@ -852,7 +852,7 @@ class QueryBuilder implements IQueryBuilder
                 return sprintf('(%s) AS %s', $sql, $alias);
             }
 
-            return sprintf('(%s)', $sql,);
+            return sprintf('(%s)', $sql);
         }
 
         return '';
