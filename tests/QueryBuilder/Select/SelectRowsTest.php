@@ -73,6 +73,14 @@ class SelectRowsTest extends TestCase
         $this->assertCount(5, $rows);
     }
 
+    public function testSelectOneColumnIterableEmpty(): void
+    {
+        $this->expectException(BuilderException::class);
+
+        $results = $this->db->table('users')
+            ->getColIterable();
+    }
+
     public function testSelectOneColumnThroughSelect(): void
     {
         $this->createUsersTable();
@@ -91,9 +99,6 @@ class SelectRowsTest extends TestCase
 
     public function testSelectNothingColumn(): void
     {
-        $this->createUsersTable();
-        $this->createUsers(5);
-
         $this->expectException(BuilderException::class);
         $results = $this->db->table('users')
             ->getCol();

@@ -97,7 +97,6 @@ class QueryBuilder implements IQueryBuilder
     protected function getTable()
     {
         if (!$this->table) {
-            // TODO: unit tests
             throw new BuilderException('No table specified!');
         }
 
@@ -117,7 +116,6 @@ class QueryBuilder implements IQueryBuilder
         }
 
         if (!$this->alias) {
-            // TODO: unit tests
             throw new BuilderException('No table alias specified!');
         }
 
@@ -145,7 +143,6 @@ class QueryBuilder implements IQueryBuilder
         $table = $this->getTable();
 
         if (!is_string($table)) {
-            // TODO: unit tests
             return $this->quoteColumn($this->alias);
         }
 
@@ -168,7 +165,6 @@ class QueryBuilder implements IQueryBuilder
      */
     public function insertGetId(array $values, ?string $aiColumn = null): int
     {
-        // TODO: unit tests
         $query = $this->getInsertSql(array_keys($values));
 
         $this->setSql($query);
@@ -270,7 +266,6 @@ class QueryBuilder implements IQueryBuilder
     public function insertBatch(array $values): int
     {
         if (count($values) === 0) {
-            // TODO: unit tests
             throw new BuilderException('Empty insert values');
         }
 
@@ -317,7 +312,6 @@ class QueryBuilder implements IQueryBuilder
     public function insertMass(array $values, bool $useTransaction = false): void
     {
         if (count($values) === 0) {
-            // TODO: unit tests
             throw new BuilderException('Empty insert values');
         }
 
@@ -560,7 +554,7 @@ class QueryBuilder implements IQueryBuilder
      * @param string|Raw|null $column
      * @return mixed
      */
-    public function getColIterable(?string $column = null): iterable
+    public function getColIterable($column = null): iterable
     {
         if ($column !== null) {
             $this->select([$column]);
@@ -1148,7 +1142,6 @@ class QueryBuilder implements IQueryBuilder
      */
     public function orHaving(...$condition): IQueryBuilder
     {
-        // TODO: unit tests
         $this->getHavingBuilder()->or(...$condition);
 
         return $this;
