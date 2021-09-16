@@ -2,6 +2,7 @@
 
 namespace R1KO\QueryBuilder;
 
+use Faker\Generator;
 use R1KO\Database\Contracts\IConnection;
 use R1KO\Database\Contracts\IDriver;
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
@@ -77,11 +78,6 @@ class QueryBuilder implements IQueryBuilder
     private function getDriver(): IDriver
     {
         return $this->getConnection()->getDriver();
-    }
-
-    private function getPlaceholder(string $column): string
-    {
-        return ':' . $column;
     }
 
     public function quoteTable(string $name): string
@@ -180,12 +176,12 @@ class QueryBuilder implements IQueryBuilder
      */
     public function insertGetId(array $values, ?string $aiColumn = null): int
     {
-        $bindings = &$this->bind;
-        $query = $this->getInsertSql(array_keys($values), $bindings);
+        $query = $this->getInsertSql(array_keys($values));
 
         $this->setSql($query);
-        $this->db->execute($query, $bindings);
 
+        $bindings = array_values($values);
+        $this->db->execute($query, $bindings);
         $id = $this->db->getLastInsertId($aiColumn);
 
         return is_numeric($id) ? (int) $id : $id;
@@ -193,13 +189,11 @@ class QueryBuilder implements IQueryBuilder
 
     private function getInsertSql(array $schema, array &$bindings = []): string
     {
-        $columns = [];
-        $placeholders = [];
+        $columns = array_map(function ($column) {
+            return $this->quoteColumn($column);
+        }, $schema);
 
-        foreach ($schema as $column => $value) {
-            $columns[] = $this->quoteColumn($column);
-            $placeholders[] = $this->getPlaceholder($column);
-        }
+        $placeholders = array_pad([], count($schema), '?');
 
         return sprintf(
             'INSERT INTO %s (%s) VALUES (%s);',
@@ -208,6 +202,7 @@ class QueryBuilder implements IQueryBuilder
             implode(', ', $placeholders)
         );
     }
+
     /*
     private function getInsertSql(array $schema, array &$bindings = []): string
     {
@@ -278,7 +273,11 @@ class QueryBuilder implements IQueryBuilder
         }
 
         $bindings = [];
-        $query = $this->getBatchInsertSql($values, $bindings);
+
+        foreach ($values as $row) {
+            array_push($bindings, ...array_values($row));
+        }
+        $query = $this->getBatchInsertSql($values);
 
         $this->setSql($query);
         $statement = $this->db->execute($query, $bindings);
@@ -286,26 +285,24 @@ class QueryBuilder implements IQueryBuilder
         return $statement->rowCount();
     }
 
-    private function getBatchInsertSql(array $values, array &$bindings): string
+    private function getBatchInsertSql(array $values): string
     {
+        $firstRow = $values[array_key_first($values)];
+
         $columns = array_map(function ($column) {
             return $this->quoteColumn($column);
-        }, array_keys($values[0]));
+        }, array_keys($firstRow));
+        $columnsCount = count($columns);
 
-        $placeholderGroups = [];
+        $placeholders = [];
 
-        foreach ($values as $i => $row) {
-            $placeholders = [];
-            foreach ($row as $columnName => $columnValue) {
-                $paramName = $columnName . $i;
-                $bindings[$paramName] = $columnValue;
-                $placeholders[] = $this->getPlaceholder($paramName);
-            }
-            $placeholderGroups[] = '(' . implode(', ', $placeholders) . ')';
+        foreach ($values as $row) {
+            $rowPlaceholder = array_pad([], $columnsCount, '?');
+            $placeholders[] = sprintf('(%s)', implode(', ', $rowPlaceholder));
         }
 
         $columnsSql = implode(', ', $columns);
-        $valuesSql = implode(', ', $placeholderGroups);
+        $valuesSql = implode(', ', $placeholders);
 
         return sprintf(
             'INSERT INTO %s (%s) VALUES %s;',
@@ -315,7 +312,7 @@ class QueryBuilder implements IQueryBuilder
         );
     }
 
-    public function insertMass(array $values, bool $useTransaction = false): array
+    public function insertMass(array $values, bool $useTransaction = false): void
     {
         if (count($values) === 0) {
             throw new BuilderException('Empty insert values');
@@ -323,38 +320,44 @@ class QueryBuilder implements IQueryBuilder
 
         $query = $this->getInsertSql(array_keys($values[array_key_first($values)]));
 
+        $values = array_map(function ($row) {
+            return array_values($row);
+        }, $values);
+
         $this->setSql($query);
 
-        $executor = function () use ($query, $values): array {
-            $results = [];
-            foreach ($this->db->executeIterable($query, $values) as $result) {
-                $results[] = $result;
-            }
-
-            return $results;
+        $executor = function () use ($query, $values): void {
+            $this->db->executeIterable($query, $values);
         };
 
         if ($useTransaction) {
-            return $this->db->transaction($executor);
+            $this->db->transaction($executor);
+            return;
         }
 
-        return $executor();
+        $executor();
     }
 
-    public function insertIterable(array $schema, iterable $iterator, bool $useTransaction = false): iterable
+    public function insertIterable(array $schema, iterable $iterator, bool $useTransaction = false): void
     {
         $query = $this->getInsertSql($schema);
 
         $this->setSql($query);
 
+        $normalizedIterator = static function () use ($iterator): iterable {
+            foreach ($iterator as $row) {
+                yield array_values($row);
+            }
+        };
+
         if ($useTransaction) {
-            yield from $this->db->transaction(function () use ($query, $iterator): iterable {
-                yield from $this->db->executeIterable($query, $iterator);
+            $this->db->transaction(function () use ($query, $normalizedIterator): void {
+                $this->db->executeIterable($query, $normalizedIterator());
             });
             return;
         }
 
-        yield from $this->db->executeIterable($query, $iterator);
+        $this->db->executeIterable($query, $normalizedIterator());
     }
 
     public function update(array $values): int

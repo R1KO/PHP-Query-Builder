@@ -5,7 +5,6 @@ namespace Tests\QueryBuilder\Insert;
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
-use R1KO\Database\Contracts\IConnection;
 
 class InsertTest extends TestCase
 {
@@ -16,9 +15,9 @@ class InsertTest extends TestCase
         $this->createUsersTable();
 
         $values = [
-            'name'    => 'test',
-            'email'   => 'test',
-            'address' => 'test',
+            'name'    => 'test-name',
+            'email'   => 'test-email',
+            'address' => 'test-address',
         ];
         $this->db->table('users')
             ->insert($values);
@@ -31,20 +30,20 @@ class InsertTest extends TestCase
         $this->assertCount(1, $results);
     }
 
-    public function testInsertValuesBatch(): void
+    public function testInsertBatchValues(): void
     {
         $this->createUsersTable();
 
         $values = [
             [
-                'name'    => 'test 1',
-                'email'   => 'test 1',
-                'address' => 'test 1',
+                'name'    => 'test-name 1',
+                'email'   => 'test-email 1',
+                'address' => 'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'test-name 2',
+                'test-email 2',
+                'test-address 2',
             ],
         ];
         $result = $this->db->table('users')
@@ -52,29 +51,40 @@ class InsertTest extends TestCase
 
         $this->assertNotNull($result);
         $this->assertEquals(count($values), $result);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(count($values), $results);
     }
 
-    public function testInsertValuesMass(): void
+    public function testInsertMassValues(): void
     {
         $this->createUsersTable();
 
         $values = [
             [
-                'name'    => 'test 1',
-                'email'   => 'test 1',
-                'address' => 'test 1',
+                'name'    => 'test-name 1',
+                'email'   => 'test-email 1',
+                'address' => 'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'test-name 2',
+                'test-email 2',
+                'test-address 2',
             ],
         ];
-        $result = $this->db->table('users')
+        $this->db->table('users')
             ->insertMass($values);
 
-        $this->assertNotNull($result);
-        $this->assertCount(count($values), $result);
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(count($values), $results);
     }
 
     public function testInsertValuesMassWithTransaction(): void
@@ -83,21 +93,25 @@ class InsertTest extends TestCase
 
         $values = [
             [
-                'name'    => 'test 1',
-                'email'   => 'test 1',
-                'address' => 'test 1',
+                'name'    => 'test-name 1',
+                'email'   => 'test-email 1',
+                'address' => 'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'test-name 2',
+                'test-email 2',
+                'test-address 2',
             ],
         ];
-        $result = $this->db->table('users')
+        $this->db->table('users')
             ->insertMass($values, true);
 
-        $this->assertNotNull($result);
-        $this->assertCount(count($values), $result);
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(count($values), $results);
     }
 
     public function testInsertValuesIterable(): void
@@ -111,34 +125,31 @@ class InsertTest extends TestCase
         ];
         $valuesSet = [
             [
-                'name'    => 'test 1',
-                'email'   => 'test 1',
-                'address' => 'test 1',
+                'test-name 1',
+                'test-email 1',
+                'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'name'    => 'test-name 2',
+                'email'   => 'test-email 2',
+                'address' => 'test-address 2',
             ],
         ];
 
-        $iterator = function () use ($valuesSet): iterable {
+        $iterator = static function () use ($valuesSet): iterable {
             foreach ($valuesSet as $values) {
                 yield $values;
             }
         };
 
-        $result = $this->db->table('users')
+        $this->db->table('users')
             ->insertIterable($schema, $iterator());
 
-        $this->assertNotNull($result);
-        $this->assertInstanceOf(\Iterator::class, $result);
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
 
-        $results = [];
-        foreach ($result as $value) {
-            $results[] = $value;
-        }
-
+        $this->assertNotNull($results);
         $this->assertCount(count($valuesSet), $results);
     }
 
@@ -153,14 +164,14 @@ class InsertTest extends TestCase
         ];
         $valuesSet = [
             [
-                'name'    => 'test 3',
-                'email'   => 'test 3',
-                'address' => 'test 3',
+                'test-name 3',
+                'test-email 3',
+                'test-address 3',
             ],
             [
-                'name'    => 'test 4',
-                'email'   => 'test 4',
-                'address' => 'test 4',
+                'name'    => 'test-name 4',
+                'email'   => 'test-email 4',
+                'address' => 'test-address 4',
             ],
         ];
 
@@ -170,17 +181,14 @@ class InsertTest extends TestCase
             }
         };
 
-        $result = $this->db->table('users')
+        $this->db->table('users')
             ->insertIterable($schema, $iterator(), true);
 
-        $this->assertNotNull($result);
-        $this->assertInstanceOf(\Iterator::class, $result);
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
 
-        $results = [];
-        foreach ($result as $value) {
-            $results[] = $value;
-        }
-
+        $this->assertNotNull($results);
         $this->assertCount(count($valuesSet), $results);
     }
 
@@ -195,28 +203,25 @@ class InsertTest extends TestCase
         ];
         $valuesSet = [
             [
-                'name'    => 'test 1',
-                'email'   => 'test 1',
-                'address' => 'test 1',
+                'test-name 1',
+                'test-email 1',
+                'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'name'    => 'test-name 2',
+                'email'   => 'test-email 2',
+                'address' => 'test-address 2',
             ],
         ];
 
-        $result = $this->db->table('users')
+        $this->db->table('users')
             ->insertIterable($schema, $valuesSet);
 
-        $this->assertNotNull($result);
-        $this->assertInstanceOf(\Iterator::class, $result);
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
 
-        $results = [];
-        foreach ($result as $value) {
-            $results[] = $value;
-        }
-
+        $this->assertNotNull($results);
         $this->assertCount(count($valuesSet), $results);
     }
 
