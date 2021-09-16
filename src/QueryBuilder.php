@@ -1023,7 +1023,7 @@ class QueryBuilder implements IQueryBuilder
     private function getWhereSql(array &$bindings): ?string
     {
         if ($this->where) {
-            $sql = $this->where->getConditionsSql($bindings);
+            $sql = $this->where->getSql($bindings);
 
             if ($sql) {
                 return ' WHERE ' . $sql;
@@ -1036,7 +1036,7 @@ class QueryBuilder implements IQueryBuilder
     private function getHavingSql(array &$bindings): ?string
     {
         if ($this->having) {
-            $sql = $this->having->getConditionsSql($bindings);
+            $sql = $this->having->getSql($bindings);
 
             if ($sql) {
                 return ' HAVING ' . $sql;
