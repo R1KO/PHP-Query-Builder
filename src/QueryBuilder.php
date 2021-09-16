@@ -2,6 +2,7 @@
 
 namespace R1KO\QueryBuilder;
 
+use Faker\Generator;
 use R1KO\Database\Contracts\IConnection;
 use R1KO\Database\Contracts\IDriver;
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
@@ -62,11 +63,6 @@ class QueryBuilder implements IQueryBuilder
         return $this->getConnection()->getDriver();
     }
 
-    private function getPlaceholder(string $column): string
-    {
-        return ':' . $column;
-    }
-
     public function quoteTable(string $name): string
     {
         return $this->getDriver()->quoteTableName($name);
@@ -107,20 +103,18 @@ class QueryBuilder implements IQueryBuilder
         $query = $this->getInsertSql(array_keys($values));
 
         $this->setSql($query);
-        $this->db->execute($query, $values);
+        $this->db->execute($query, array_values($values));
 
         return $this->db->getLastInsertId();
     }
 
     private function getInsertSql(array $schema): string
     {
-        $columns = [];
-        $placeholders = [];
+        $columns = array_map(function ($column) {
+            return $this->quoteColumn($column);
+        }, $schema);
 
-        foreach ($schema as $column) {
-            $columns[] = $this->quoteColumn($column);
-            $placeholders[] = $this->getPlaceholder($column);
-        }
+        $placeholders = array_pad([], count($schema), '?');
 
         return sprintf(
             'INSERT INTO %s (%s) VALUES (%s);',
@@ -128,6 +122,98 @@ class QueryBuilder implements IQueryBuilder
             implode(', ', $columns),
             implode(', ', $placeholders)
         );
+    }
+
+    public function insertBatch(array $values): int
+    {
+        if (count($values) === 0) {
+            throw new BuilderException('Empty insert values');
+        }
+
+        $bindings = [];
+        $query = $this->getBatchInsertSql($values, $bindings);
+
+        $this->setSql($query);
+        $statement = $this->db->execute($query, $bindings);
+
+        return $statement->rowCount();
+    }
+
+    private function getBatchInsertSql(array $values, array &$bindings): string
+    {
+        $firstRow = $values[array_key_first($values)];
+
+        $columns = array_map(function ($column) {
+            return $this->quoteColumn($column);
+        }, array_keys($firstRow));
+        $columnsCount = count($columns);
+
+        $placeholders = [];
+
+        foreach ($values as $row) {
+            array_push($bindings, ...array_values($row));
+
+            $rowPlaceholder = array_pad([], $columnsCount, '?');
+            $placeholders[] = sprintf('(%s)', implode(', ', $rowPlaceholder));
+        }
+
+        $columnsSql = implode(', ', $columns);
+        $valuesSql = implode(', ', $placeholders);
+
+        return sprintf(
+            'INSERT INTO %s (%s) VALUES %s;',
+            $this->quoteTable($this->table),
+            $columnsSql,
+            $valuesSql
+        );
+    }
+
+    public function insertMass(array $values, bool $useTransaction = false): void
+    {
+        if (count($values) === 0) {
+            throw new BuilderException('Empty insert values');
+        }
+
+        $query = $this->getInsertSql(array_keys($values[array_key_first($values)]));
+
+        $values = array_map(function ($row) {
+            return array_values($row);
+        }, $values);
+
+        $this->setSql($query);
+
+        $executor = function () use ($query, $values): void {
+            $this->db->executeIterable($query, $values);
+        };
+
+        if ($useTransaction) {
+            $this->db->transaction($executor);
+            return;
+        }
+
+        $executor();
+    }
+
+    public function insertIterable(array $schema, iterable $iterator, bool $useTransaction = false): void
+    {
+        $query = $this->getInsertSql($schema);
+
+        $this->setSql($query);
+
+        $normalizedIterator = static function () use ($iterator): iterable {
+            foreach ($iterator as $row) {
+                yield array_values($row);
+            }
+        };
+
+        if ($useTransaction) {
+            $this->db->transaction(function () use ($query, $normalizedIterator): void {
+                $this->db->executeIterable($query, $normalizedIterator());
+            });
+            return;
+        }
+
+        $this->db->executeIterable($query, $normalizedIterator());
     }
 
     public function update(array $values): int
@@ -176,92 +262,6 @@ class QueryBuilder implements IQueryBuilder
         $statement = $this->db->execute($query, $bindings);
 
         return $statement->rowCount();
-    }
-
-    public function insertBatch(array $values): int
-    {
-        if (count($values) === 0) {
-            throw new BuilderException('Empty insert values');
-        }
-
-        $bindings = [];
-        $query = $this->getBatchInsertSql($values, $bindings);
-
-        $this->setSql($query);
-        $statement = $this->db->execute($query, $bindings);
-
-        return $statement->rowCount();
-    }
-
-    private function getBatchInsertSql(array $values, array &$bindings): string
-    {
-        $columns = array_map(function ($column) {
-            return $this->quoteColumn($column);
-        }, array_keys($values[0]));
-
-        $placeholderGroups = [];
-
-        foreach ($values as $i => $row) {
-            $placeholders = [];
-            foreach ($row as $columnName => $columnValue) {
-                $paramName = $columnName . $i;
-                $bindings[$paramName] = $columnValue;
-                $placeholders[] = $this->getPlaceholder($paramName);
-            }
-            $placeholderGroups[] = '(' . implode(', ', $placeholders) . ')';
-        }
-
-        $columnsSql = implode(', ', $columns);
-        $valuesSql = implode(', ', $placeholderGroups);
-
-        return sprintf(
-            'INSERT INTO %s (%s) VALUES %s;',
-            $this->quoteTable($this->table),
-            $columnsSql,
-            $valuesSql
-        );
-    }
-
-    public function insertMass(array $values, bool $useTransaction = false): array
-    {
-        if (count($values) === 0) {
-            throw new BuilderException('Empty insert values');
-        }
-
-        $query = $this->getInsertSql(array_keys($values[array_key_first($values)]));
-
-        $this->setSql($query);
-
-        $executor = function () use ($query, $values): array {
-            $results = [];
-            foreach ($this->db->executeIterable($query, $values) as $result) {
-                $results[] = $result;
-            }
-
-            return $results;
-        };
-
-        if ($useTransaction) {
-            return $this->db->transaction($executor);
-        }
-
-        return $executor();
-    }
-
-    public function insertIterable(array $schema, iterable $iterator, bool $useTransaction = false): iterable
-    {
-        $query = $this->getInsertSql($schema);
-
-        $this->setSql($query);
-
-        if ($useTransaction) {
-            yield from $this->db->transaction(function () use ($query, $iterator): iterable {
-                yield from $this->db->executeIterable($query, $iterator);
-            });
-            return;
-        }
-
-        yield from $this->db->executeIterable($query, $iterator);
     }
 
     public function select(array $columns): IQueryBuilder

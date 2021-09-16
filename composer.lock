@@ -8,19 +8,20 @@
     "packages": [
         {
             "name": "r1ko/database-connection",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://gitlab.com/R1KO/database-connection.git",
-                "reference": "be3dde79e8be4e00c90c37f9e3d4e79fe8b32b17"
+                "reference": "fb389846de435eb11195e00717ea7ca3ec035c8d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/R1KO%2Fdatabase-connection/repository/archive.zip?sha=be3dde79e8be4e00c90c37f9e3d4e79fe8b32b17",
-                "reference": "be3dde79e8be4e00c90c37f9e3d4e79fe8b32b17",
+                "url": "https://gitlab.com/api/v4/projects/R1KO%2Fdatabase-connection/repository/archive.zip?sha=fb389846de435eb11195e00717ea7ca3ec035c8d",
+                "reference": "fb389846de435eb11195e00717ea7ca3ec035c8d",
                 "shasum": ""
             },
             "require": {
+                "ext-pdo": "*",
                 "php": ">=7.4"
             },
             "require-dev": {
@@ -51,7 +52,7 @@
             "support": {
                 "issues": "https://gitlab.com/api/v4/projects/11433885/issues"
             },
-            "time": "2021-08-23T21:16:21+00:00"
+            "time": "2021-09-16T14:52:06+00:00"
         }
     ],
     "packages-dev": [
