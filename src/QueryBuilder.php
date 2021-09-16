@@ -97,7 +97,6 @@ class QueryBuilder implements IQueryBuilder
     protected function getTable()
     {
         if (!$this->table) {
-            // TODO: unit tests
             throw new BuilderException('No table specified!');
         }
 
@@ -117,7 +116,6 @@ class QueryBuilder implements IQueryBuilder
         }
 
         if (!$this->alias) {
-            // TODO: unit tests
             throw new BuilderException('No table alias specified!');
         }
 
@@ -145,7 +143,6 @@ class QueryBuilder implements IQueryBuilder
         $table = $this->getTable();
 
         if (!is_string($table)) {
-            // TODO: unit tests
             return $this->quoteColumn($this->alias);
         }
 
@@ -168,7 +165,6 @@ class QueryBuilder implements IQueryBuilder
      */
     public function insertGetId(array $values, ?string $aiColumn = null): int
     {
-        // TODO: unit tests
         $query = $this->getInsertSql(array_keys($values));
 
         $this->setSql($query);
@@ -270,7 +266,6 @@ class QueryBuilder implements IQueryBuilder
     public function insertBatch(array $values): int
     {
         if (count($values) === 0) {
-            // TODO: unit tests
             throw new BuilderException('Empty insert values');
         }
 
@@ -317,7 +312,6 @@ class QueryBuilder implements IQueryBuilder
     public function insertMass(array $values, bool $useTransaction = false): void
     {
         if (count($values) === 0) {
-            // TODO: unit tests
             throw new BuilderException('Empty insert values');
         }
 
@@ -560,7 +554,7 @@ class QueryBuilder implements IQueryBuilder
      * @param string|Raw|null $column
      * @return mixed
      */
-    public function getColIterable(?string $column = null): iterable
+    public function getColIterable($column = null): iterable
     {
         if ($column !== null) {
             $this->select([$column]);
@@ -665,19 +659,36 @@ class QueryBuilder implements IQueryBuilder
      */
     public function count(?string $columnName = null): int
     {
-        if ($columnName !== null) {
-            $columnName = $this->getQuotedColumnName($columnName);
-            if ($this->isDistinct) {
-                $this->isDistinct = false;
-                $columnName = 'DISTINCT ' . $columnName;
-            }
-        } else {
+        if ($columnName === null) {
             $columnName = '*';
+            $this->isDistinct = false;
         }
 
-        $columnName = $this->raw('COUNT(' . $columnName . ')');
+        $columnName = $this->getAggregateColumnSql('COUNT', $columnName);
 
         return (int) $this->getOne($columnName);
+    }
+
+    /**
+     * @param string $function
+     * @param string|Raw $column
+     * @return string
+     */
+    private function getAggregateColumnSql(string $function, $column): Raw
+    {
+        if ($column instanceof Raw) {
+            $column = $column->get();
+        } elseif (is_string($column) && $column !== '*') {
+            $column = $this->getQuotedColumnName($column);
+        }
+
+        $distinct = '';
+        if ($this->isDistinct) {
+            $this->distinct(false);
+            $distinct = 'DISTINCT ';
+        }
+
+        return $this->raw(sprintf('%s(%s%s)', $function, $distinct, $column));
     }
 
     /**
@@ -686,14 +697,7 @@ class QueryBuilder implements IQueryBuilder
      */
     public function sum($columnName)
     {
-        if (is_string($columnName)) {
-            $columnName = $this->getQuotedColumnName($columnName);
-        } elseif ($columnName instanceof Raw) {
-            // TODO: unit tests
-            $columnName = $columnName->get();
-        }
-
-        $columnName = $this->raw('SUM(' . $columnName . ')');
+        $columnName = $this->getAggregateColumnSql('SUM', $columnName);
 
         return $this->getOne($columnName) ?: 0;
     }
@@ -704,14 +708,7 @@ class QueryBuilder implements IQueryBuilder
      */
     public function avg($columnName)
     {
-        if (is_string($columnName)) {
-            $columnName = $this->getQuotedColumnName($columnName);
-        } elseif ($columnName instanceof Raw) {
-            // TODO: unit tests
-            $columnName = $columnName->get();
-        }
-
-        $columnName = $this->raw('AVG(' . $columnName . ')');
+        $columnName = $this->getAggregateColumnSql('AVG', $columnName);
 
         return $this->getOne($columnName) ?: 0;
     }
@@ -722,14 +719,7 @@ class QueryBuilder implements IQueryBuilder
      */
     public function min($columnName)
     {
-        if (is_string($columnName)) {
-            $columnName = $this->getQuotedColumnName($columnName);
-        } elseif ($columnName instanceof Raw) {
-            // TODO: unit tests
-            $columnName = $columnName->get();
-        }
-
-        $columnName = $this->raw('MIN(' . $columnName . ')');
+        $columnName = $this->getAggregateColumnSql('MIN', $columnName);
 
         return $this->getOne($columnName);
     }
@@ -740,14 +730,7 @@ class QueryBuilder implements IQueryBuilder
      */
     public function max($columnName)
     {
-        if (is_string($columnName)) {
-            $columnName = $this->getQuotedColumnName($columnName);
-        } elseif ($columnName instanceof Raw) {
-            // TODO: unit tests
-            $columnName = $columnName->get();
-        }
-
-        $columnName = $this->raw('MAX(' . $columnName . ')');
+        $columnName = $this->getAggregateColumnSql('MAX', $columnName);
 
         return $this->getOne($columnName);
     }
@@ -949,8 +932,7 @@ class QueryBuilder implements IQueryBuilder
             return $alias ? sprintf('%s AS %s', $sql, $alias) : $sql;
         }
 
-        // TODO: fix this & unit tests
-        return '';
+        throw new BuilderException('Incorrect type of column');
     }
 
     private function getQuotedColumnName(string $column, ?string $alias = null): string
@@ -1023,9 +1005,8 @@ class QueryBuilder implements IQueryBuilder
         return $query;
     }
 
-    public function getSql(): ?string
+    private function getSql(): ?string
     {
-        // TODO: unit tests
         return $this->sql;
     }
 
@@ -1034,9 +1015,8 @@ class QueryBuilder implements IQueryBuilder
         $this->sql = $sql;
     }
 
-    public function getBindings(): ?array
+    private function getBindings(): ?array
     {
-        // TODO: unit tests
         return $this->bind;
     }
 
@@ -1148,7 +1128,6 @@ class QueryBuilder implements IQueryBuilder
      */
     public function orHaving(...$condition): IQueryBuilder
     {
-        // TODO: unit tests
         $this->getHavingBuilder()->or(...$condition);
 
         return $this;

@@ -3,6 +3,7 @@
 namespace Tests\QueryBuilder\Insert;
 
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
+use R1KO\QueryBuilder\Exceptions\BuilderException;
 use Tests\TestCase;
 use Tests\Traits\PostsTable;
 use Tests\Traits\UsersTable;
@@ -30,6 +31,31 @@ class InsertTest extends TestCase
 
         $this->assertNotNull($results);
         $this->assertCount(1, $results);
+    }
+
+    public function testInsertValuesWithGetId(): void
+    {
+        $this->createUsersTable();
+
+        $values = [
+            'name'    => 'test-name',
+            'email'   => 'test-email',
+            'address' => 'test-address',
+        ];
+        $id = $this->db->table('users')
+            ->insertGetId($values);
+
+        $this->assertNotNull($id);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(1, $results);
+
+        $row = array_shift($results);
+        $this->assertEquals($id, $row['id']);
     }
 
     public function testInsertBatchValues(): void
@@ -62,6 +88,15 @@ class InsertTest extends TestCase
         $this->assertCount(count($values), $results);
     }
 
+    public function testInsertBatchEmptyValues(): void
+    {
+        $this->expectException(BuilderException::class);
+
+        $values = [];
+        $result = $this->db->table('users')
+            ->insertBatch($values);
+    }
+
     public function testInsertMassValues(): void
     {
         $this->createUsersTable();
@@ -87,6 +122,16 @@ class InsertTest extends TestCase
 
         $this->assertNotNull($results);
         $this->assertCount(count($values), $results);
+    }
+
+
+    public function testInsertMassEmptyValues(): void
+    {
+        $this->expectException(BuilderException::class);
+
+        $values = [];
+        $this->db->table('users')
+            ->insertMass($values);
     }
 
     public function testInsertValuesMassWithTransaction(): void

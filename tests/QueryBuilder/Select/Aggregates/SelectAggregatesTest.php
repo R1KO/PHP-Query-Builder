@@ -99,6 +99,46 @@ class SelectAggregatesTest extends TestCase
         $this->assertEquals($expectedSum, $sum);
     }
 
+    public function testSelectSumDistinct(): void
+    {
+        $this->createOrdersTable();
+        $orders = $this->createOrders(5);
+        $this->createOrderByValues($orders[0]);
+
+        $results = $this->db->table('orders')
+            ->getCol('price');
+
+        $expectedSum = array_sum(array_unique($results));
+
+        $sum = $this->db->table('orders')
+            ->distinct()
+            ->sum('price');
+
+        $this->assertNotNull($sum);
+        $this->assertEquals($expectedSum, $sum);
+    }
+
+    public function testSelectSumRaw(): void
+    {
+        $this->createOrdersTable();
+        $this->createOrders(5);
+
+        $results = $this->db->table('orders')
+            ->getCol('price');
+
+        $expectedSum = array_sum(
+            array_map(function ($price) {
+                return $price * $price;
+            }, $results)
+        );
+
+        $sum = $this->db->table('orders')
+            ->sum($this->db->raw('price * price'));
+
+        $this->assertNotNull($sum);
+        $this->assertEquals($expectedSum, $sum);
+    }
+
     public function testSelectAvg(): void
     {
         $this->createOrdersTable();

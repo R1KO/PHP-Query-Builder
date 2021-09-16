@@ -4,6 +4,7 @@ namespace Tests\QueryBuilder\Select;
 
 use R1KO\QueryBuilder\Exceptions\BuilderException;
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
+use stdClass;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
 
@@ -69,6 +70,25 @@ class SelectFromTest extends TestCase
                     ->select(['name', 'address'])
                     ->limit(3);
             })
+            ->select(['*'])
+            ->getAll();
+    }
+
+    public function testSelectWithoutTable(): void
+    {
+        $this->expectException(BuilderException::class);
+
+        $results = $this->db->builder()
+            ->select(['*'])
+            ->getAll();
+    }
+
+    public function testSelectWithInvalidTable(): void
+    {
+        $this->expectException(BuilderException::class);
+
+        $results = $this->db->builder()
+            ->from(new stdClass())
             ->select(['*'])
             ->getAll();
     }

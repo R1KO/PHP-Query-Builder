@@ -87,7 +87,7 @@ SQL;
         $orders = [];
         foreach (range(1, $count) as $i) {
             $order = [
-                'id_user' => $idUser,
+                'id_user'    => $idUser,
                 'id_product' => $faker->numberBetween(),
                 'price'      => $faker->numberBetween(20, 1000),
                 'comment'    => $faker->realText(),
@@ -106,5 +106,22 @@ SQL;
         }
 
         return $orders;
+    }
+
+    protected function createOrderByValues(array $values): void
+    {
+        $db = $this->getConnection();
+
+        $idUser = isset($values['id_user']) ? $db->quote($values['id_user']) : 'NULL';
+        $idProduct = $db->quote($values['id_product']);
+        $price = $db->quote($values['price']);
+        $comment = $db->quote($values['comment']);
+
+        $sql = <<<SQL
+INSERT INTO orders (id_user, id_product, price, comment) 
+VALUES ({$idUser}, {$idProduct}, {$price}, {$comment});
+SQL;
+
+        $db->query($sql);
     }
 }
