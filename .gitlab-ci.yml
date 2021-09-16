@@ -43,6 +43,7 @@ before_script:
 codestyle:
   script:
     - ./vendor/bin/phpcs src
+    - ./vendor/bin/phpcs tests
 
 static_code_analytics_psalm:
   script:

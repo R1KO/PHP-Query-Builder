@@ -71,6 +71,5 @@ class SelectFromTest extends TestCase
             })
             ->select(['*'])
             ->getAll();
-
     }
 }

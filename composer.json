@@ -32,5 +32,15 @@
         "psr-4": {
             "Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "check": [
+            "./vendor/bin/phpcs src",
+            "./vendor/bin/phpcs tests",
+            "./vendor/bin/psalm",
+            "./vendor/bin/phpstan analyse src",
+            "./vendor/bin/phpstan analyse tests",
+            "./vendor/bin/phpunit tests -c phpunit.xml --testdox"
+        ]
     }
 }
