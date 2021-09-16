@@ -4,11 +4,13 @@ namespace Tests\QueryBuilder\Insert;
 
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use Tests\TestCase;
+use Tests\Traits\PostsTable;
 use Tests\Traits\UsersTable;
 
 class InsertTest extends TestCase
 {
     use UsersTable;
+    use PostsTable;
 
     public function testInsertValues(): void
     {
@@ -230,14 +232,25 @@ class InsertTest extends TestCase
         $this->createUsersTable();
         $this->createUsers(5);
 
+        $faker = $this->getFaker();
+
+        $address = $faker->address();
+        $values = [
+            'name'    => $faker->name(),
+            'email'   => $faker->email(),
+            'address' => $address,
+        ];
+        $this->createUserByValues($values);
+
         $columns = ['name', 'email', 'address'];
 
         $this->db->table('users')
             ->insertFrom(
                 $columns,
-                function (IQueryBuilder $query) use ($columns) {
+                function (IQueryBuilder $query) use ($columns, $address) {
                     $query->select($columns)
-                        ->from('users');
+                        ->from('users')
+                        ->where('address !=', $address);
                 }
             );
 
@@ -246,29 +259,31 @@ class InsertTest extends TestCase
             ->getAll();
 
         $this->assertNotNull($results);
-        $this->assertCount(10, $results);
+        $this->assertCount(11, $results);
     }
-/*
+
     public function testInsertWithSubqueries(): void
     {
         $this->createUsersTable();
         $this->createUsers(1);
+        $this->createPostsTable();
+        $this->createPosts(5);
 
         $values = [
             'name'    => 'test',
             'email'   => function (IQueryBuilder $query) {
-                $query->select(['email'])
-                    ->from('users')
+                $query->select(['topic'])
+                    ->from('posts')
                     ->limit(1);
             },
             'address' => function (IQueryBuilder $query) {
-                $query->select(['address'])
-                    ->from('users')
+                $query->select(['topic'])
+                    ->from('posts')
                     ->limit(1);
             },
         ];
         $this->db->table('users')
-            ->insert($values);
+            ->insertWithSub($values);
 
         $results = $this->db->table('users')
             ->select(['*'])
@@ -277,5 +292,4 @@ class InsertTest extends TestCase
         $this->assertNotNull($results);
         $this->assertCount(2, $results);
     }
-*/
 }

@@ -124,12 +124,9 @@ class QueryBuilder implements IQueryBuilder
             throw new BuilderException('No table alias specified!');
         }
 
-        $builder = $this->createSelfInstance();
-        $table($builder);
+        $sql = $this->getSubQuerySelectSql($table, $bindings);
 
-        $sql = $builder->getSelectSql($bindings);
-
-        return sprintf('(%s) AS %s', $sql, $this->alias);
+        return sprintf('%s AS %s', $sql, $this->alias);
     }
 
     private function getQuotedTableName(string $table, ?string $alias = null): string
@@ -187,6 +184,50 @@ class QueryBuilder implements IQueryBuilder
         return is_numeric($id) ? (int) $id : $id;
     }
 
+    public function insertWithSub(array $values): void
+    {
+        $bindings = [];
+        $query = $this->getInsertSqlWithSubQueries($values, $bindings);
+
+        $this->setSql($query);
+        $this->db->execute($query, $bindings);
+    }
+
+    public function getSubQuerySelectSql(callable $subQuery, array &$bindings, bool $addBrackets = true): string
+    {
+        $builder = $this->createSelfInstance();
+        $subQuery($builder);
+
+        $sql = $builder->getSelectSql($bindings);
+
+        return $addBrackets ? sprintf('(%s)', $sql) : $sql;
+    }
+
+    private function getInsertSqlWithSubQueries(array $schema, array &$bindings): string
+    {
+        $columns = [];
+        $placeholders = [];
+
+        foreach ($schema as $column => $value) {
+            $columns[] = $this->quoteColumn($column);
+
+            if (!is_callable($value)) {
+                $bindings[] = $value;
+                $placeholders[] = '?';
+                continue;
+            }
+
+            $placeholders[] = $this->getSubQuerySelectSql($value, $bindings);
+        }
+
+        return sprintf(
+            'INSERT INTO %s (%s) VALUES (%s);',
+            $this->quoteTable($this->table),
+            implode(', ', $columns),
+            implode(', ', $placeholders)
+        );
+    }
+
     private function getInsertSql(array $schema): string
     {
         $columns = array_map(function ($column) {
@@ -203,39 +244,6 @@ class QueryBuilder implements IQueryBuilder
         );
     }
 
-    /*
-    private function getInsertSql(array $schema, array &$bindings = []): string
-    {
-        $columns = [];
-        $placeholders = [];
-
-        foreach ($schema as $column => $value) {
-            $columns[] = $this->quoteColumn($column);
-
-            if (!is_callable($value)) {
-                $placeholder = $this->getPlaceholder($column);
-                $placeholders[] = $placeholder;
-                $bindings[$placeholder] = $value;
-                continue;
-            }
-
-            $builder = $this->createSelfInstance();
-            $value($builder);
-
-            $sql = $builder->getSelectSql($bindings);
-
-            $placeholders[] = sprintf('(%s)', $sql);
-        }
-
-        return sprintf(
-            'INSERT INTO %s (%s) VALUES (%s);',
-            $this->quoteTable($this->table),
-            implode(', ', $columns),
-            implode(', ', $placeholders)
-        );
-    }
-*/
-
     /**
      * @param array $columns
      * @param callable $from
@@ -243,11 +251,8 @@ class QueryBuilder implements IQueryBuilder
      */
     public function insertFrom(array $columns, callable $from): void
     {
-        $builder = $this->createSelfInstance();
-        $from($builder);
-
         $bindings = &$this->bind;
-        $sql = $builder->getSelectSql($bindings);
+        $sql = $this->getSubQuerySelectSql($from, $bindings, false);
 
         $columnNames = [];
 
@@ -362,22 +367,10 @@ class QueryBuilder implements IQueryBuilder
 
     public function update(array $values): int
     {
-        $bindings = [];
-        $fields = [];
-
-        foreach ($values as $column => $value) {
-            $fields[] = sprintf('%s = ?', $this->quoteColumn($column));
-            $bindings[] = $value;
-        }
-
-        $query = sprintf(
-            'UPDATE %s SET %s',
-            $this->quoteTable($this->table),
-            implode(', ', $fields)
-        );
+        $query = $this->getUpdateSql(array_keys($values));
+        $bindings = array_values($values);
 
         $whereSql = $this->getWhereSql($bindings);
-
         if ($whereSql) {
             $query .= $whereSql;
         }
@@ -386,6 +379,57 @@ class QueryBuilder implements IQueryBuilder
         $statement = $this->db->execute($query, $bindings);
 
         return $statement->rowCount();
+    }
+
+    private function getUpdateSql(array $schema): string
+    {
+        $columns = array_map(function ($column) {
+            return sprintf('%s = ?', $this->quoteColumn($column));
+        }, $schema);
+
+        return sprintf(
+            'UPDATE %s SET %s',
+            $this->quoteTable($this->table),
+            implode(', ', $columns)
+        );
+    }
+
+    public function updateWithSub(array $values): int
+    {
+        $bindings = [];
+        $query = $this->getUpdateSqlWithSubQueries($values, $bindings);
+
+        $whereSql = $this->getWhereSql($bindings);
+        if ($whereSql) {
+            $query .= $whereSql;
+        }
+
+        $this->setSql($query);
+        $statement = $this->db->execute($query, $bindings);
+
+        return $statement->rowCount();
+    }
+
+    private function getUpdateSqlWithSubQueries(array $values, array &$bindings): string
+    {
+        $columns = [];
+
+        foreach ($values as $column => $value) {
+            if (!is_callable($value)) {
+                $columns[] = sprintf('%s = ?', $this->quoteColumn($column));
+                $bindings[] = $value;
+                continue;
+            }
+
+            $subSql = $this->getSubQuerySelectSql($value, $bindings);
+            $columns[] = sprintf('%s = %s', $this->quoteColumn($column), $subSql);
+        }
+
+        return sprintf(
+            'UPDATE %s SET %s',
+            $this->quoteTable($this->table),
+            implode(', ', $columns)
+        );
     }
 
     public function delete(): int
@@ -894,16 +938,9 @@ class QueryBuilder implements IQueryBuilder
         }
 
         if (is_callable($column)) {
-            $builder = $this->createSelfInstance();
-            $column($builder);
+            $sql = $this->getSubQuerySelectSql($column, $this->bind);
 
-            $sql = $builder->getSelectSql($this->bind);
-
-            if ($alias !== null) {
-                return sprintf('(%s) AS %s', $sql, $alias);
-            }
-
-            return sprintf('(%s)', $sql);
+            return $alias ? sprintf('%s AS %s', $sql, $alias) : $sql;
         }
 
         return '';
