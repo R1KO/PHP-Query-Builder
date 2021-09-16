@@ -3,6 +3,8 @@
 namespace Tests\QueryBuilder;
 
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
+use R1KO\QueryBuilder\Exceptions\BuilderException;
+use stdClass;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
 
@@ -68,6 +70,15 @@ class SelectColumnsTest extends TestCase
         $this->assertArrayHasKey('name', $firstRow);
         $this->assertArrayHasKey('address', $firstRow);
         $this->assertArrayNotHasKey('id', $firstRow);
+    }
+
+    public function testSelectWrongColumn(): void
+    {
+        $this->expectException(BuilderException::class);
+
+        $results = $this->db->table('users')
+            ->select([new stdClass()])
+            ->getAll();
     }
 
     public function testSelectWithColumnAliases(): void
@@ -217,7 +228,7 @@ class SelectColumnsTest extends TestCase
         $this->assertCount(5, $results);
     }
 
-    public function testSelectSubqueryColumn(): void
+    public function testSelectSubQueryColumn(): void
     {
         $this->createUsersTable();
         $this->createUsers(5);
@@ -228,8 +239,7 @@ class SelectColumnsTest extends TestCase
                 $query->select(['address'])
                     ->from('users', 'sub_users')
                     ->where($this->db->raw('sub_users.id = users.id'))
-                    ->limit(1)
-                    ->getCol();
+                    ->limit(1);
             },
         ];
         $results = $this->db->table('users')
