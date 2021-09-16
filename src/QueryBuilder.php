@@ -1121,6 +1121,17 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
+     * @param array $columns
+     * @return $this
+     */
+    public function addGroupBy(array $columns): IQueryBuilder
+    {
+        array_push($this->groupBy, ...$columns);
+
+        return $this;
+    }
+
+    /**
      * @param array $condition
      * @return $this
      */
