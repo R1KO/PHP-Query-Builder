@@ -162,8 +162,8 @@ class QueryBuilder implements IQueryBuilder
 
     public function insert(array $values): void
     {
-        $bindings = &$this->bind;
-        $query = $this->getInsertSql(array_keys($values), $bindings);
+        $query = $this->getInsertSql(array_keys($values));
+        $bindings = array_values($values);
 
         $this->setSql($query);
         $this->db->execute($query, $bindings);
@@ -187,7 +187,7 @@ class QueryBuilder implements IQueryBuilder
         return is_numeric($id) ? (int) $id : $id;
     }
 
-    private function getInsertSql(array $schema, array &$bindings = []): string
+    private function getInsertSql(array $schema): string
     {
         $columns = array_map(function ($column) {
             return $this->quoteColumn($column);
