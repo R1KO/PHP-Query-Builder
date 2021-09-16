@@ -587,13 +587,6 @@ $id = $db->table('users')
 ```php
 
 $id = $db->table('users')
-    ->groupBy('address')
-    ->getAll();
-```
-
-```php
-
-$id = $db->table('users')
     ->groupBy(['address'])
     ->getAll();
 ```
@@ -601,7 +594,7 @@ $id = $db->table('users')
 ```php
 
 $id = $db->table('users')
-    ->groupBy('address', 'name')
+    ->groupBy(['address', 'name'])
     ->getAll();
 ```
 

@@ -83,7 +83,7 @@ SQL;
 
         $name = $db->quote($values['name']);
         $email = $db->quote($values['email']);
-        $address = $values['address'] ? $db->quote($values['address']) : 'NULL';
+        $address = isset($values['address']) ? $db->quote($values['address']) : 'NULL';
 
         $sql = <<<SQL
 INSERT INTO users (name, email, address) VALUES ({$name}, {$email}, {$address});

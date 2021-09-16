@@ -40,17 +40,18 @@ before_script:
   - php -r "unlink('composer-setup.php');"
   - php composer.phar install
 
-#codestyle:
-#  script:
-#    - ./vendor/bin/phpcs src
-#
-#static_code_analytics_psalm:
-#  script:
-#    - ./vendor/bin/psalm
-#
-#static_code_analytics_phpstan:
-#  script:
-#    - ./vendor/bin/phpstan analyse src
+codestyle:
+  script:
+    - ./vendor/bin/phpcs src
+    - ./vendor/bin/phpcs tests
+
+static_code_analytics_psalm:
+  script:
+    - ./vendor/bin/psalm
+
+static_code_analytics_phpstan:
+  script:
+    - ./vendor/bin/phpstan analyse src
 
 unit_tests_sqlite:
   variables:

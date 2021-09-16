@@ -2,12 +2,15 @@
 
 namespace Tests\QueryBuilder\Insert;
 
+use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use Tests\TestCase;
+use Tests\Traits\PostsTable;
 use Tests\Traits\UsersTable;
 
 class InsertTest extends TestCase
 {
     use UsersTable;
+    use PostsTable;
 
     public function testInsertValues(): void
     {
@@ -18,12 +21,11 @@ class InsertTest extends TestCase
             'email'   => 'test-email',
             'address' => 'test-address',
         ];
-        $id = $this->db->table('users')
+        $this->db->table('users')
             ->insert($values);
 
-        $this->assertNotNull($id);
-
         $results = $this->db->table('users')
+            ->select(['*'])
             ->getAll();
 
         $this->assertNotNull($results);
@@ -53,6 +55,7 @@ class InsertTest extends TestCase
         $this->assertEquals(count($values), $result);
 
         $results = $this->db->table('users')
+            ->select(['*'])
             ->getAll();
 
         $this->assertNotNull($results);
@@ -79,6 +82,7 @@ class InsertTest extends TestCase
             ->insertMass($values);
 
         $results = $this->db->table('users')
+            ->select(['*'])
             ->getAll();
 
         $this->assertNotNull($results);
@@ -105,6 +109,7 @@ class InsertTest extends TestCase
             ->insertMass($values, true);
 
         $results = $this->db->table('users')
+            ->select(['*'])
             ->getAll();
 
         $this->assertNotNull($results);
@@ -143,6 +148,7 @@ class InsertTest extends TestCase
             ->insertIterable($schema, $iterator());
 
         $results = $this->db->table('users')
+            ->select(['*'])
             ->getAll();
 
         $this->assertNotNull($results);
@@ -181,6 +187,7 @@ class InsertTest extends TestCase
             ->insertIterable($schema, $iterator(), true);
 
         $results = $this->db->table('users')
+            ->select(['*'])
             ->getAll();
 
         $this->assertNotNull($results);
@@ -213,10 +220,76 @@ class InsertTest extends TestCase
             ->insertIterable($schema, $valuesSet);
 
         $results = $this->db->table('users')
+            ->select(['*'])
             ->getAll();
 
         $this->assertNotNull($results);
         $this->assertCount(count($valuesSet), $results);
     }
 
+    public function testInsertFromOtherTable(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
+
+        $faker = $this->getFaker();
+
+        $address = $faker->address();
+        $values = [
+            'name'    => $faker->name(),
+            'email'   => $faker->email(),
+            'address' => $address,
+        ];
+        $this->createUserByValues($values);
+
+        $columns = ['name', 'email', 'address'];
+
+        $this->db->table('users')
+            ->insertFrom(
+                $columns,
+                function (IQueryBuilder $query) use ($columns, $address) {
+                    $query->select($columns)
+                        ->from('users')
+                        ->where('address !=', $address);
+                }
+            );
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(11, $results);
+    }
+
+    public function testInsertWithSubqueries(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(1);
+        $this->createPostsTable();
+        $this->createPosts(5);
+
+        $values = [
+            'name'    => 'test',
+            'email'   => function (IQueryBuilder $query) {
+                $query->select(['topic'])
+                    ->from('posts')
+                    ->limit(1);
+            },
+            'address' => function (IQueryBuilder $query) {
+                $query->select(['topic'])
+                    ->from('posts')
+                    ->limit(1);
+            },
+        ];
+        $this->db->table('users')
+            ->insertWithSub($values);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(2, $results);
+    }
 }

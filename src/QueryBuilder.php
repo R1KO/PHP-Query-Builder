@@ -15,19 +15,22 @@ use Closure;
 
 class QueryBuilder implements IQueryBuilder
 {
-    private IConnection        $db;
-    private array              $bind       = [];
-    private string             $table;
-    private ?string            $alias      = null;
-    private array              $join       = [];
-    private array              $select     = [];
-    private ?ConditionsBuilder $where      = null;
-    private array              $groupBy    = [];
-    private ?ConditionsBuilder $having     = null;
-    private array              $order      = [];
-    private ?int               $limit = null;
-    private ?int               $offset = null;
-    private bool               $isDistinct = false;
+    private IConnection $db;
+    private array $bind = [];
+    /**
+     * @var string|callable
+     */
+    private $table;
+    private ?string $alias = null;
+    private array $join = [];
+    private array $select = [];
+    private ?ConditionsBuilder $where = null;
+    private array $groupBy = [];
+    private ?ConditionsBuilder $having = null;
+    private array $order = [];
+    private ?int $limit = null;
+    private ?int $offset = null;
+    private bool $isDistinct = false;
     /**
      * @var string|callable
      */
@@ -40,20 +43,34 @@ class QueryBuilder implements IQueryBuilder
         $this->db = $db;
     }
 
+    /**
+     * @param string $table
+     * @param string|null $alias
+     * @return IQueryBuilder
+     */
     public function table(string $table, ?string $alias = null): IQueryBuilder
     {
+        return $this->from($table, $alias);
+    }
+
+    /**
+     * @param string|callable $table
+     * @param string|null $alias
+     * @return IQueryBuilder
+     */
+    public function from($table, ?string $alias = null): IQueryBuilder
+    {
+        if (!is_string($table) && !$alias) {
+            throw new BuilderException('No table alias specified!');
+        }
+
         $this->table = $table;
         $this->alias = $alias;
 
         return $this;
     }
 
-    public function from(string $table, ?string $alias = null): IQueryBuilder
-    {
-        return $this->table($table, $alias);
-    }
-
-    private function getConnection(): IConnection
+    public function getConnection(): IConnection
     {
         return $this->db;
     }
@@ -63,19 +80,50 @@ class QueryBuilder implements IQueryBuilder
         return $this->getConnection()->getDriver();
     }
 
-    public function quoteTable(string $name): string
+    private function quoteTable(string $name): string
     {
         return $this->getDriver()->quoteTableName($name);
     }
 
-    public function quoteColumn(string $name): string
+    private function quoteColumn(string $name): string
     {
         return $this->getDriver()->quoteColumnName($name);
     }
 
-    public function getCurrentTableName(): string
+    /**
+     * @return string|callable
+     * @throws BuilderException
+     */
+    protected function getTable()
     {
-        return $this->getQuotedTableName($this->table, $this->alias);
+        if (!$this->table) {
+            // TODO: unit tests
+            throw new BuilderException('No table specified!');
+        }
+
+        return $this->table;
+    }
+
+    protected function createSelfInstance(): IQueryBuilder
+    {
+        return new self($this->db);
+    }
+
+    protected function getSelectFromTableName(array &$bindings): string
+    {
+        $table = $this->getTable();
+        if (is_string($table)) {
+            return $this->getQuotedTableName($table, $this->alias);
+        }
+
+        if (!$this->alias) {
+            // TODO: unit tests
+            throw new BuilderException('No table alias specified!');
+        }
+
+        $sql = $this->getSubQuerySelectSql($table, $bindings);
+
+        return sprintf('%s AS %s', $sql, $this->alias);
     }
 
     private function getQuotedTableName(string $table, ?string $alias = null): string
@@ -88,24 +136,92 @@ class QueryBuilder implements IQueryBuilder
         return $table . ' AS ' . $this->quoteColumn($alias);
     }
 
-    private function getTable(): string
+    private function getTableForSelect(): string
     {
-        $table = $this->quoteColumn($this->table);
-        if ($this->alias === null) {
-            return $table;
+        if ($this->alias) {
+            return $this->quoteColumn($this->alias);
         }
 
-        return $this->quoteColumn($this->alias);
+        $table = $this->getTable();
+
+        if (!is_string($table)) {
+            // TODO: unit tests
+            return $this->quoteColumn($this->alias);
+        }
+
+        return $this->quoteColumn($table);
     }
 
-    public function insert(array $values): int
+    public function insert(array $values): void
     {
+        $query = $this->getInsertSql(array_keys($values));
+        $bindings = array_values($values);
+
+        $this->setSql($query);
+        $this->db->execute($query, $bindings);
+    }
+
+    /**
+     * @param array $values
+     * @param string|null $aiColumn
+     * @return int
+     */
+    public function insertGetId(array $values, ?string $aiColumn = null): int
+    {
+        // TODO: unit tests
         $query = $this->getInsertSql(array_keys($values));
 
         $this->setSql($query);
-        $this->db->execute($query, array_values($values));
 
-        return $this->db->getLastInsertId();
+        $bindings = array_values($values);
+        $this->db->execute($query, $bindings);
+        $id = $this->db->getLastInsertId($aiColumn);
+
+        return is_numeric($id) ? (int) $id : $id;
+    }
+
+    public function insertWithSub(array $values): void
+    {
+        $bindings = [];
+        $query = $this->getInsertSqlWithSubQueries($values, $bindings);
+
+        $this->setSql($query);
+        $this->db->execute($query, $bindings);
+    }
+
+    public function getSubQuerySelectSql(callable $subQuery, array &$bindings, bool $addBrackets = true): string
+    {
+        $builder = $this->createSelfInstance();
+        $subQuery($builder);
+
+        $sql = $builder->getSelectSql($bindings);
+
+        return $addBrackets ? sprintf('(%s)', $sql) : $sql;
+    }
+
+    private function getInsertSqlWithSubQueries(array $schema, array &$bindings): string
+    {
+        $columns = [];
+        $placeholders = [];
+
+        foreach ($schema as $column => $value) {
+            $columns[] = $this->quoteColumn($column);
+
+            if (!is_callable($value)) {
+                $bindings[] = $value;
+                $placeholders[] = '?';
+                continue;
+            }
+
+            $placeholders[] = $this->getSubQuerySelectSql($value, $bindings);
+        }
+
+        return sprintf(
+            'INSERT INTO %s (%s) VALUES (%s);',
+            $this->quoteTable($this->getTable()),
+            implode(', ', $columns),
+            implode(', ', $placeholders)
+        );
     }
 
     private function getInsertSql(array $schema): string
@@ -118,20 +234,52 @@ class QueryBuilder implements IQueryBuilder
 
         return sprintf(
             'INSERT INTO %s (%s) VALUES (%s);',
-            $this->quoteTable($this->table),
+            $this->quoteTable($this->getTable()),
             implode(', ', $columns),
             implode(', ', $placeholders)
         );
     }
 
+    /**
+     * @param array $columns
+     * @param callable $from
+     * @return void
+     */
+    public function insertFrom(array $columns, callable $from): void
+    {
+        $bindings = &$this->bind;
+        $sql = $this->getSubQuerySelectSql($from, $bindings, false);
+
+        $columnNames = [];
+
+        foreach ($columns as $column) {
+            $columnNames[] = $this->quoteColumn($column);
+        }
+
+        $sql = sprintf(
+            'INSERT INTO %s (%s) %s',
+            $this->quoteTable($this->getTable()),
+            implode(', ', $columnNames),
+            $sql
+        );
+
+        $this->setSql($sql);
+        $this->db->execute($sql, $bindings);
+    }
+
     public function insertBatch(array $values): int
     {
         if (count($values) === 0) {
+            // TODO: unit tests
             throw new BuilderException('Empty insert values');
         }
 
         $bindings = [];
-        $query = $this->getBatchInsertSql($values, $bindings);
+
+        foreach ($values as $row) {
+            array_push($bindings, ...array_values($row));
+        }
+        $query = $this->getBatchInsertSql($values);
 
         $this->setSql($query);
         $statement = $this->db->execute($query, $bindings);
@@ -139,7 +287,7 @@ class QueryBuilder implements IQueryBuilder
         return $statement->rowCount();
     }
 
-    private function getBatchInsertSql(array $values, array &$bindings): string
+    private function getBatchInsertSql(array $values): string
     {
         $firstRow = $values[array_key_first($values)];
 
@@ -151,8 +299,6 @@ class QueryBuilder implements IQueryBuilder
         $placeholders = [];
 
         foreach ($values as $row) {
-            array_push($bindings, ...array_values($row));
-
             $rowPlaceholder = array_pad([], $columnsCount, '?');
             $placeholders[] = sprintf('(%s)', implode(', ', $rowPlaceholder));
         }
@@ -162,7 +308,7 @@ class QueryBuilder implements IQueryBuilder
 
         return sprintf(
             'INSERT INTO %s (%s) VALUES %s;',
-            $this->quoteTable($this->table),
+            $this->quoteTable($this->getTable()),
             $columnsSql,
             $valuesSql
         );
@@ -171,6 +317,7 @@ class QueryBuilder implements IQueryBuilder
     public function insertMass(array $values, bool $useTransaction = false): void
     {
         if (count($values) === 0) {
+            // TODO: unit tests
             throw new BuilderException('Empty insert values');
         }
 
@@ -218,22 +365,10 @@ class QueryBuilder implements IQueryBuilder
 
     public function update(array $values): int
     {
-        $bindings = [];
-        $fields = [];
-
-        foreach ($values as $column => $value) {
-            $fields[] = sprintf('%s = ?', $this->quoteColumn($column));
-            $bindings[] = $value;
-        }
-
-        $query = sprintf(
-            'UPDATE %s SET %s',
-            $this->quoteTable($this->table),
-            implode(', ', $fields)
-        );
+        $query = $this->getUpdateSql(array_keys($values));
+        $bindings = array_values($values);
 
         $whereSql = $this->getWhereSql($bindings);
-
         if ($whereSql) {
             $query .= $whereSql;
         }
@@ -244,11 +379,63 @@ class QueryBuilder implements IQueryBuilder
         return $statement->rowCount();
     }
 
+    private function getUpdateSql(array $schema): string
+    {
+        $columns = array_map(function ($column) {
+            return sprintf('%s = ?', $this->quoteColumn($column));
+        }, $schema);
+
+        return sprintf(
+            'UPDATE %s SET %s',
+            $this->quoteTable($this->getTable()),
+            implode(', ', $columns)
+        );
+    }
+
+    public function updateWithSub(array $values): int
+    {
+        $bindings = [];
+        $query = $this->getUpdateSqlWithSubQueries($values, $bindings);
+
+        $whereSql = $this->getWhereSql($bindings);
+        if ($whereSql) {
+            $query .= $whereSql;
+        }
+
+        $this->setSql($query);
+        $statement = $this->db->execute($query, $bindings);
+
+        return $statement->rowCount();
+    }
+
+    private function getUpdateSqlWithSubQueries(array $values, array &$bindings): string
+    {
+        $columns = [];
+
+        foreach ($values as $column => $value) {
+            if (!is_callable($value)) {
+                // TODO: unit tests
+                $columns[] = sprintf('%s = ?', $this->quoteColumn($column));
+                $bindings[] = $value;
+                continue;
+            }
+
+            $subSql = $this->getSubQuerySelectSql($value, $bindings);
+            $columns[] = sprintf('%s = %s', $this->quoteColumn($column), $subSql);
+        }
+
+        return sprintf(
+            'UPDATE %s SET %s',
+            $this->quoteTable($this->getTable()),
+            implode(', ', $columns)
+        );
+    }
+
     public function delete(): int
     {
         $query = sprintf(
             'DELETE FROM %s',
-            $this->quoteTable($this->table),
+            $this->quoteTable($this->getTable()),
         );
 
         $bindings = [];
@@ -291,6 +478,7 @@ class QueryBuilder implements IQueryBuilder
      */
     public function as($object = \stdClass::class): IQueryBuilder
     {
+        // TODO: unit tests
         $this->asObject = $object;
 
         return $this;
@@ -334,7 +522,7 @@ class QueryBuilder implements IQueryBuilder
         if ($column !== null) {
             $this->select([$column]);
         }
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -349,15 +537,17 @@ class QueryBuilder implements IQueryBuilder
 
     /**
      * @param string|Raw|null $column
-     * @return mixed
+     * @return array
      */
     public function getCol(?string $column = null): array
     {
         if ($column !== null) {
             $this->select([$column]);
+        } elseif (count($this->select) === 0) {
+            throw new BuilderException('No column specified');
         }
 
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -374,9 +564,12 @@ class QueryBuilder implements IQueryBuilder
     {
         if ($column !== null) {
             $this->select([$column]);
+        } elseif (count($this->select) === 0) {
+            // TODO: unit tests
+            throw new BuilderException('No column specified');
         }
 
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -392,8 +585,8 @@ class QueryBuilder implements IQueryBuilder
      */
     public function getRow(): ?array
     {
-        $this->limit = 1;
-        $bindings = [];
+        $this->limit(1);
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -410,7 +603,7 @@ class QueryBuilder implements IQueryBuilder
      */
     public function getAll(): ?array
     {
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -428,7 +621,7 @@ class QueryBuilder implements IQueryBuilder
     public function getAssoc(string $columnName = null): array
     {
         // TODO: check if column exists in select (or alias)
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -451,7 +644,7 @@ class QueryBuilder implements IQueryBuilder
     public function getIterable(string $columnName = null): iterable
     {
         // TODO: check if column exists in select (or alias)
-        $bindings = [];
+        $bindings = &$this->bind;
         $query = $this->getSelectSql($bindings);
 
         $this->setSql($query);
@@ -496,6 +689,7 @@ class QueryBuilder implements IQueryBuilder
         if (is_string($columnName)) {
             $columnName = $this->getQuotedColumnName($columnName);
         } elseif ($columnName instanceof Raw) {
+            // TODO: unit tests
             $columnName = $columnName->get();
         }
 
@@ -513,6 +707,7 @@ class QueryBuilder implements IQueryBuilder
         if (is_string($columnName)) {
             $columnName = $this->getQuotedColumnName($columnName);
         } elseif ($columnName instanceof Raw) {
+            // TODO: unit tests
             $columnName = $columnName->get();
         }
 
@@ -530,6 +725,7 @@ class QueryBuilder implements IQueryBuilder
         if (is_string($columnName)) {
             $columnName = $this->getQuotedColumnName($columnName);
         } elseif ($columnName instanceof Raw) {
+            // TODO: unit tests
             $columnName = $columnName->get();
         }
 
@@ -547,6 +743,7 @@ class QueryBuilder implements IQueryBuilder
         if (is_string($columnName)) {
             $columnName = $this->getQuotedColumnName($columnName);
         } elseif ($columnName instanceof Raw) {
+            // TODO: unit tests
             $columnName = $columnName->get();
         }
 
@@ -601,6 +798,7 @@ class QueryBuilder implements IQueryBuilder
      */
     public function fullJoin($table, array $condition): IQueryBuilder
     {
+        // TODO: unit tests
         return $this->addJoin('full', $table, $condition);
     }
 
@@ -665,7 +863,7 @@ class QueryBuilder implements IQueryBuilder
         $query = sprintf(
             'SELECT %s FROM %s',
             $columns,
-            $this->getCurrentTableName()
+            $this->getSelectFromTableName($bindings)
         );
 
         $join = $this->getJoinSql();
@@ -702,7 +900,7 @@ class QueryBuilder implements IQueryBuilder
             $query .= $limit;
         }
 
-        return $query . ';';
+        return $query;
     }
 
     private function getSelectColumnsSql(): string
@@ -713,12 +911,9 @@ class QueryBuilder implements IQueryBuilder
 
         $columns = [];
 
-        // TODO: remake to support Raw
-        foreach ($this->select as $index => $column) {
-            $alias = null;
-            if (is_string($index)) {
-                $alias = $column;
-                $column = $index;
+        foreach ($this->select as $alias => $column) {
+            if (!is_string($alias)) {
+                $alias = null;
             }
 
             $columns[] = $this->getPreparedColumnName($column, $alias);
@@ -728,20 +923,33 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|Raw $column
+     * @param string|callable|Raw $column
      * @param string|null $alias
      * @return string
      */
     private function getPreparedColumnName($column, ?string $alias = null): string
     {
-        if ($column instanceof Raw) {
-            return $column->get();
-        }
-
         if (is_string($column)) {
             return $this->getQuotedColumnName($column, $alias);
         }
 
+        if ($column instanceof Raw) {
+            $columnName = $column->get();
+
+            if ($alias !== null) {
+                $columnName .= ' AS ' . $this->quoteColumn($alias);
+            }
+
+            return $columnName;
+        }
+
+        if (is_callable($column)) {
+            $sql = $this->getSubQuerySelectSql($column, $this->bind);
+
+            return $alias ? sprintf('%s AS %s', $sql, $alias) : $sql;
+        }
+
+        // TODO: fix this & unit tests
         return '';
     }
 
@@ -752,18 +960,21 @@ class QueryBuilder implements IQueryBuilder
             $table = $this->quoteTable($table);
         } else {
             $columnName = $column;
-            $table = $this->getTable();
+
+            $table = $this->getTableForSelect();
         }
 
-        if ($columnName !== '*') {
-            $columnName = $this->quoteColumn($columnName);
-
-            if ($alias !== null) {
-                $columnName .= ' AS ' . $this->quoteColumn($alias);
-            }
+        if ($columnName == '*') {
+            return $table . '.' . $columnName;
         }
 
-        return $table . '.' . $columnName;
+        $columnName = $table . '.' . $this->quoteColumn($columnName);
+
+        if ($alias !== null) {
+            $columnName .= ' AS ' . $this->quoteColumn($alias);
+        }
+
+        return $columnName;
     }
 
     private function getGroupBySql(): ?string
@@ -812,17 +1023,21 @@ class QueryBuilder implements IQueryBuilder
         return $query;
     }
 
-    /**
-     * @return string|null
-     */
     public function getSql(): ?string
     {
+        // TODO: unit tests
         return $this->sql;
     }
 
     private function setSql(string $sql): void
     {
         $this->sql = $sql;
+    }
+
+    public function getBindings(): ?array
+    {
+        // TODO: unit tests
+        return $this->bind;
     }
 
     private function getWhereSql(array &$bindings): ?string
@@ -898,16 +1113,26 @@ class QueryBuilder implements IQueryBuilder
      * @param array $columns
      * @return $this
      */
-    public function groupBy(...$columns): IQueryBuilder
+    public function groupBy(array $columns): IQueryBuilder
     {
-        // TODO: may be use strict args type
-        array_push($this->groupBy, ...$this->getFlatArray($columns));
+        $this->groupBy = $columns;
 
         return $this;
     }
 
     /**
-     * @param string|Closure $condition
+     * @param array $columns
+     * @return $this
+     */
+    public function addGroupBy(array $columns): IQueryBuilder
+    {
+        array_push($this->groupBy, ...$columns);
+
+        return $this;
+    }
+
+    /**
+     * @param array $condition
      * @return $this
      */
     public function having(...$condition): IQueryBuilder
@@ -918,18 +1143,19 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|Closure $condition
+     * @param array $condition
      * @return $this
      */
     public function orHaving(...$condition): IQueryBuilder
     {
+        // TODO: unit tests
         $this->getHavingBuilder()->or(...$condition);
 
         return $this;
     }
 
     /**
-     * @param string|Closure $condition
+     * @param array $condition
      * @return $this
      */
     public function where(...$condition): IQueryBuilder
@@ -940,7 +1166,7 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @param string|Closure $condition
+     * @param array $condition
      * @return $this
      */
     public function orWhere(...$condition): IQueryBuilder
@@ -1020,25 +1246,5 @@ class QueryBuilder implements IQueryBuilder
     public function raw(string $expression): Raw
     {
         return static::asRaw($expression);
-    }
-
-    private function getFlatArray(array $input): array
-    {
-        if (count($input) === 0) {
-            return $input;
-        }
-
-        $result = [];
-
-        foreach ($input as $value) {
-            if (!is_array($value)) {
-                $result[] = $value;
-                continue;
-            }
-
-            array_push($result, ...$this->getFlatArray($value));
-        }
-
-        return $result;
     }
 }

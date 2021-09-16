@@ -12,7 +12,8 @@
     "prefer-stable": true,
     "require": {
         "php": ">=7.4",
-        "r1ko/database-connection": "^1.0"
+        "r1ko/database-connection": "^1.0",
+        "ext-pdo":"*"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0",
@@ -31,5 +32,15 @@
         "psr-4": {
             "Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "check": [
+            "./vendor/bin/phpcs src",
+            "./vendor/bin/phpcs tests",
+            "./vendor/bin/psalm",
+            "./vendor/bin/phpstan analyse src",
+            "./vendor/bin/phpstan analyse tests",
+            "./vendor/bin/phpunit tests -c phpunit.xml --testdox"
+        ]
     }
 }

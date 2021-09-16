@@ -14,9 +14,14 @@ class ConnectionWithBuilder extends Connection
         return new QueryBuilder($this);
     }
 
-    public function table(string $table, string $alias = null): IQueryBuilder
+    public function from(string $table, string $alias = null): IQueryBuilder
     {
         return $this->builder()->table($table, $alias);
+    }
+
+    public function table(string $table, string $alias = null): IQueryBuilder
+    {
+        return $this->from($table, $alias);
     }
 
     public function raw(string $expression): Raw

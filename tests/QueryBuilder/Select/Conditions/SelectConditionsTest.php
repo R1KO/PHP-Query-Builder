@@ -158,8 +158,6 @@ class SelectConditionsTest extends TestCase
 
     public function testSelectWithDuplicateColumnInConditions(): void
     {
-        $faker = $this->getFaker();
-
         $this->createUsersTable();
         $this->createUsers(5);
 
@@ -171,6 +169,12 @@ class SelectConditionsTest extends TestCase
 
         $this->assertNotNull($results);
         $this->assertCount(3, $results);
+    }
+
+    public function testSelectWithBetweenAndNotBetween(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
 
         $results = $this->db->table('users')
             ->select(['*'])
@@ -179,6 +183,85 @@ class SelectConditionsTest extends TestCase
 
         $this->assertNotNull($results);
         $this->assertCount(4, $results);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('id NOT BETWEEN', [2, 10])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(1, $results);
+    }
+
+    public function testSelectWithInAndNotIn(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('id IN', [1, 3])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(2, $results);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('id NOT IN', [1, 3])
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(3, $results);
+    }
+
+    public function testSelectWithLikeAndNotLike(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('id LIKE', '%')
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(5, $results);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('id NOT LIKE', '%')
+            ->getAll();
+
+        $this->assertNull($results);
+    }
+
+    public function testSelectWithIsNullAndIsNotNull(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
+        $values = [
+            'name'    => 'test-name ' . time(),
+            'email'   => 'test-email ' . time(),
+        ];
+
+        $this->createUserByValues($values);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('address IS', null)
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(1, $results);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('address IS NOT', null)
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(5, $results);
     }
 
     public function testSelectWithSubCondition(): void
@@ -221,5 +304,35 @@ class SelectConditionsTest extends TestCase
 
         $this->assertNotNull($results);
         $this->assertCount(1, $results);
+    }
+
+    public function testSelectWithSubQuery(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('address', static function ($query) {
+                $query->select(['address'])
+                    ->from('users')
+                    ->orderBy('id', 'ASC')
+                    ->limit(1);
+            })
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(1, $results);
+
+        $resultRow = array_shift($results);
+
+        $row = $this->db->table('users')
+            ->select(['email', 'address'])
+            ->orderBy('id', 'ASC')
+            ->limit(1)
+            ->getRow();
+
+        $this->assertEquals($resultRow['email'], $row['email']);
+        $this->assertEquals($resultRow['address'], $row['address']);
     }
 }

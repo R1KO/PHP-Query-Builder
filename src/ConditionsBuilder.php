@@ -11,15 +11,8 @@ class ConditionsBuilder
     public const SQL_AND = ' AND ';
     public const SQL_OR = ' OR ';
 
-    /**
-     * @var array
-     */
-    private $conditions = [];
-
-    /**
-     * @var array
-     */
-    private $bindings = [];
+    private array $conditions = [];
+    private array $bindings = [];
     private IQueryBuilder $builder;
 
     final public function __construct(IQueryBuilder $builder)
@@ -132,9 +125,16 @@ class ConditionsBuilder
             [$column, $value] = $condition;
             $operator = '=';
             if (strpos($column, ' ') !== false) {
-                [$column, $operator] = explode(' ', $column);
+                [$column, $operator] = explode(' ', $column, 2);
             }
             $column = trim($column);
+
+            if (is_callable($value)) {
+                $value = $this->builder->getSubQuerySelectSql($value, $this->bindings);
+
+                $operator = $this->getPreparedOperator($operator);
+                return implode(' ', [$column, $operator, $value]);
+            }
 
             return $this->getConditionSql($column, $operator, $value);
         }
@@ -145,6 +145,7 @@ class ConditionsBuilder
             return $this->getConditionSql($column, $operator, $value);
         }
 
+        // TODO: remake this & unit tests
         return '';
     }
 
@@ -163,7 +164,12 @@ class ConditionsBuilder
             return $column->get();
         }
 
-        return $this->builder->quoteColumn(trim($column));
+        return $this->quoteColumn(trim($column));
+    }
+
+    private function quoteColumn(string $name): string
+    {
+        return $this->builder->getConnection()->getDriver()->quoteColumnName($name);
     }
 
     /**
@@ -174,9 +180,14 @@ class ConditionsBuilder
      */
     private function getConditionSql(string $column, string $operator, $value): string
     {
-        $operator = strtoupper(trim($operator));
+        $operator = $this->getPreparedOperator($operator);
         $value = $this->getValueByOperator($operator, $value);
         return implode(' ', [$column, $operator, $value]);
+    }
+
+    private function getPreparedOperator(string $operator): string
+    {
+        return strtoupper(trim($operator));
     }
 
     /**
@@ -187,17 +198,10 @@ class ConditionsBuilder
     private function getValueByOperator(string $operator, $value): string
     {
         switch ($operator) {
-            /*
-             // Default case (maybe set $value = NULL)
             case 'IS':
             case 'IS NOT':
-                $conditions = [];
-                foreach ($value as $index => $inValue) {
-                    $placeholders[] = '?';
-                    $this->bindings[] = $inValue;
-                }
-                return $operator . 'NULL';
-            */
+                return 'NULL';
+
             case 'IN':
             case 'NOT IN':
                 $placeholders = [];
@@ -213,17 +217,13 @@ class ConditionsBuilder
                 $this->bindings[] = $value[1];
                 return '? AND ?';
 
-            case 'LIKE':
-            case 'ILIKE':
-            case 'NOT LIKE':
-                $this->bindings[] = $value;
-                return '(?)';
+//            case 'LIKE':
+//            case 'ILIKE':
+//            case 'NOT LIKE':
+//                $this->bindings[] = $value;
+//                return '?';
 
             default:
-//                if (is_null($value)) {
-//                    $value = 'NULL';
-//                }
-//                $this->bindValue($column, $value);
                 $this->bindings[] = $value;
                 return '?';
         }

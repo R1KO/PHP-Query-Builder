@@ -19,7 +19,7 @@ class SelectHavingTest extends TestCase
 
         $results = $this->db->table('users')
             ->select([$this->db->raw('COUNT(address) as addresses')])
-            ->groupBy('address')
+            ->groupBy(['address'])
             ->having($this->db->raw('COUNT(address)'), '>', 1)
             ->getAll();
 
