@@ -2,10 +2,8 @@
 
 namespace Tests\QueryBuilder\Insert;
 
-use Iterator;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
-use R1KO\Database\Contracts\IConnection;
 
 class InsertTest extends TestCase
 {
@@ -16,9 +14,9 @@ class InsertTest extends TestCase
         $this->createUsersTable();
 
         $values = [
-            'name'    => 'test',
-            'email'   => 'test',
-            'address' => 'test',
+            'name'    => 'test-name',
+            'email'   => 'test-email',
+            'address' => 'test-address',
         ];
         $id = $this->db->table('users')
             ->insert($values);
@@ -38,14 +36,14 @@ class InsertTest extends TestCase
 
         $values = [
             [
-                'name'    => 'test 1',
-                'email'   => 'test 1',
-                'address' => 'test 1',
+                'name'    => 'test-name 1',
+                'email'   => 'test-email 1',
+                'address' => 'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'test-name 2',
+                'test-email 2',
+                'test-address 2',
             ],
         ];
         $result = $this->db->table('users')
@@ -67,14 +65,14 @@ class InsertTest extends TestCase
 
         $values = [
             [
-                'name'    => 'test 1',
-                'email'   => 'test 1',
-                'address' => 'test 1',
+                'name'    => 'test-name 1',
+                'email'   => 'test-email 1',
+                'address' => 'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'test-name 2',
+                'test-email 2',
+                'test-address 2',
             ],
         ];
         $this->db->table('users')
@@ -93,14 +91,14 @@ class InsertTest extends TestCase
 
         $values = [
             [
-                'name'    => 'test 1',
-                'email'   => 'test 1',
-                'address' => 'test 1',
+                'name'    => 'test-name 1',
+                'email'   => 'test-email 1',
+                'address' => 'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'test-name 2',
+                'test-email 2',
+                'test-address 2',
             ],
         ];
         $this->db->table('users')
@@ -124,14 +122,14 @@ class InsertTest extends TestCase
         ];
         $valuesSet = [
             [
-                'test 1',
-                'test 1',
-                'test 1',
+                'test-name 1',
+                'test-email 1',
+                'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'name'    => 'test-name 2',
+                'email'   => 'test-email 2',
+                'address' => 'test-address 2',
             ],
         ];
 
@@ -162,14 +160,14 @@ class InsertTest extends TestCase
         ];
         $valuesSet = [
             [
-                'test 3',
-                'test 3',
-                'test 3',
+                'test-name 3',
+                'test-email 3',
+                'test-address 3',
             ],
             [
-                'name'    => 'test 4',
-                'email'   => 'test 4',
-                'address' => 'test 4',
+                'name'    => 'test-name 4',
+                'email'   => 'test-email 4',
+                'address' => 'test-address 4',
             ],
         ];
 
@@ -200,14 +198,14 @@ class InsertTest extends TestCase
         ];
         $valuesSet = [
             [
-                'test 1',
-                'test 1',
-                'test 1',
+                'test-name 1',
+                'test-email 1',
+                'test-address 1',
             ],
             [
-                'name'    => 'test 2',
-                'email'   => 'test 2',
-                'address' => 'test 2',
+                'name'    => 'test-name 2',
+                'email'   => 'test-email 2',
+                'address' => 'test-address 2',
             ],
         ];
 
