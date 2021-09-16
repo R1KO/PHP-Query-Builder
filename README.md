@@ -2,7 +2,6 @@
 
 [![pipeline status](https://gitlab.com/R1KO/php-query-builder/badges/master/pipeline.svg)](https://gitlab.com/R1KO/php-query-builder/-/commits/master) [![coverage report](https://gitlab.com/R1KO/php-query-builder/badges/master/coverage.svg)](https://gitlab.com/R1KO/php-query-builder/-/commits/master)
 
-
 ## Connection with use QueryBuilder
 
 ```php
@@ -21,17 +20,16 @@ $params = [
 $db = ConnectionWithBuilderFactory::create($params);
 ```
 
----
 
-## Inserts
+## QueryBuilder
 
-### Insert one row
+### Insert
 
 ```php
-public function insert(array $values): void;
+public function insert(array $values): int;
 ```
 
-Insert data into a table and returns the ID of the added row
+> Insert data into a table and returns the ID of the added row
 
 ```php
 $values = [
@@ -43,24 +41,8 @@ $id = $db->table('users')
     ->insert($values);
 ```
 
-```php
-public function insertGetId(array $values): int;
-```
 
-Insert data into a table and returns the ID of the added row
-
-```php
-$values = [
-    'name'    => 'test',
-    'email'   => 'test',
-    'address' => 'test',
-];
-$id = $db->table('users')
-    ->insertGetId($values);
-```
-
-
-### Insert many rows
+### Batch Insert
 
 ```php
 public function insertBatch(array $values): int;
@@ -70,7 +52,7 @@ Insert a lot of data into a table and returns the number of row added
 
 Example SQL:
 ```sql
-INSERT INTO table (col1, col2, ...colN) VALUES (val1, val2, ...valN), (val1, val2, ...valN), ...;
+INSERT INTO (col1, col2, ...colN) VALUES (val1, val2, ...valN), (val1, val2, ...valN), ...;
 ```
 
 ```php
@@ -91,18 +73,17 @@ $count = $db->table('users')
 ```
 
 
-### Insert group of rows
+### Mass Insert
 
 ```php
-public function insertMass(array $values, bool $useTransaction = false): int;
-public function insertMassGetId(array $values, bool $useTransaction = false): array;
+public function insertMass(array $values, bool $useTransaction = false): array;
 ```
 
 Insert a set of data into a table as a prepared query and returns an array of added row IDs
 
 Example SQL:
 ```sql
-INSERT INTO table (col1, col2, ...colN) VALUES (?, ?, ...);
+INSERT INTO (col1, col2, ...colN) VALUES (?, ?, ...);
 ```
 
 ```php
@@ -118,17 +99,14 @@ $values = [
         'address' => 'test 2',
     ],
 ];
-$count = $db->table('users')
-    ->insertMass($values);
 $ids = $db->table('users')
-    ->insertMassGetId($values);
+    ->insertMass($values);
 ```
 
 ### Iterable Insert
 
 ```php
-public function insertIterable(array $schema, iterable $iterator, bool $useTransaction = false): void;
-public function insertIterableGetId(array $schema, iterable $iterator, bool $useTransaction = false): iterable;
+public function insertIterable(array $schema, iterable $iterator, bool $useTransaction = false): iterable;
 ```
 
 ```php
@@ -153,48 +131,9 @@ $iterator = function (): iterable {
     ];
 };
 
-$db->table('users')
-    ->insertIterable($schema, $iterator);
-
 $idsIterator = $db->table('users')
-    ->insertIterableGetId($schema, $iterator);
+    ->insertIterable($schema, $iterator);
 ```
-
-
-### Insert from other table
-
-```php
-public function insertFrom(array $columns, callable $from): void;
-```
-
-```php
-$columns = ['id', 'name', 'address'];
-$db->table('users')
-    ->insertFrom(
-        $columns,
-        function (IQueryBuilder $query) use ($columns) {
-            $query->select($columns)
-                ->from('clients');
-    });
-```
-
-Example SQL:
-```sql
-INSERT INTO table (col1, col2, ...colN) SELECT col1, col2, ...colN FROM others_table;
-```
-
-
-### Insert with subquery
-```php
-$values = [
-    'name'    => 'test',
-    'email'   => 'test',
-    'address' => function (IQueryBuilder),
-];
-$id = $db->table('users')
-    ->insert($values);
-```
-
 
 ## Delete
 
@@ -206,7 +145,6 @@ $count = $db->table('users')
     ->delete();
 ```
 
-
 ## Update
 
 Update rows conditionally and returns the number of rows modified
@@ -216,6 +154,7 @@ $count = $db->table('users')
     ->where('status', 'outdated')
     ->update(['status' => 'deleted']);
 ```
+
 
 ## Select
 
@@ -386,36 +325,15 @@ $id = $db->table('users')
     ->getOne();
 ```
 
-### FROM Table Alias
 
-```php
-$results = $db->table('users', 'students') // users AS students
-    ->select(['*'])
-    ->getAll();
-
-$results = $db->builder()
-    ->from('users', 'students') // users AS students
-    ->select(['*'])
-    ->getAll();
-
-$results = $this->db->builder()
-            ->from(function (IQueryBuilder $query) {
-                $query->table('users')
-                    ->select(['name', 'address'])
-                    ->limit(3);
-            })
-            ->select(['*'])
-            ->getAll();
-```
-
-### Columns Aliases
+### Aliases
 
 ```php
 $id = $db->table('users')
     ->select([
-         'user_id' => 'id', // id AS user_id
+        'id' => 'user_id', 
         'status', 
-        'is_active' => $db->raw('IF(deleted_at IS NULL, 1, 0)'), // IF(deleted_at IS NULL, 1, 0) AS is_active
+        $db->raw('IF(deleted_at IS NULL, 1, 0)') => 'is_active'
     ])
     ->getAll();
 ```
@@ -452,21 +370,14 @@ $columns = [
     $db->raw('address AS user_address'),
     // or
     QueryBuilder::asRaw('address AS user_address'),
-    // or subquery
-    'user_address' => function (IQueryBuilder $query) {
-        [$query->select(['address'])
-            ->from('users', 'sub_users')
-            ->where($this->db->raw('sub_users.id = users.id'))
-            ->limit(1)
-            ->getCol();
-    },
+    // TODO: subquery
 ];
 $results = $db->table('users')
     ->select($columns)
     ->getAll();
 ```
 
-### Conditions
+## Conditions
 
 > TODO ...
 > 
@@ -633,7 +544,7 @@ SELECT * FROM users WHERE email = ? AND (address = ? OR address = ?)
 // chunkById
 ```
 
-### Limit & Offset
+## Limit & Offset
 
 ```php
 
@@ -643,7 +554,7 @@ $id = $db->table('users')
     ->getAll();
 ```
 
-### Sorting
+## Sorting
 
 ```php
 
@@ -671,14 +582,7 @@ $id = $db->table('users')
 // TODO: orderByRaw
 ```
 
-### Grouping
-
-```php
-
-$id = $db->table('users')
-    ->groupBy('address')
-    ->getAll();
-```
+## Grouping
 
 ```php
 
@@ -690,15 +594,16 @@ $id = $db->table('users')
 ```php
 
 $id = $db->table('users')
-    ->groupBy('address', 'name')
+    ->groupBy(['address', 'name'])
     ->getAll();
 ```
 
-### Having
+## Having
 
 > TODO ...
 
-### Joins
+
+## Joins
 
 > TODO ...
 
@@ -739,7 +644,7 @@ $posts = $this->db->table('posts')
 
 // TODO: additional conditions
 
-### Aggregate
+## Aggregate
 
 ```php
 $countCompletedOrders = $this->db->table('orders')
