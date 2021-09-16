@@ -245,7 +245,7 @@ class SelectColumnsTest extends TestCase
         $this->assertArrayNotHasKey('address', $firstRow);
     }
 
-    public function testSelectSubqueryColumnWithAlias(): void
+    public function testSelectSubQueryColumnWithAlias(): void
     {
         $this->createUsersTable();
         $this->createUsers(5);

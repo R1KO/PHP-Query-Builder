@@ -145,6 +145,7 @@ class ConditionsBuilder
             return $this->getConditionSql($column, $operator, $value);
         }
 
+        // TODO: remake this & unit tests
         return '';
     }
 
@@ -163,7 +164,12 @@ class ConditionsBuilder
             return $column->get();
         }
 
-        return $this->builder->quoteColumn(trim($column));
+        return $this->quoteColumn(trim($column));
+    }
+
+    private function quoteColumn(string $name): string
+    {
+        return $this->builder->getConnection()->getDriver()->quoteColumnName($name);
     }
 
     /**
