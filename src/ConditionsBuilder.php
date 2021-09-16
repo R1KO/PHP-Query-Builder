@@ -3,6 +3,7 @@
 namespace R1KO\QueryBuilder;
 
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
+use R1KO\QueryBuilder\Exceptions\ConditionException;
 use R1KO\QueryBuilder\Expressions\Raw;
 use Closure;
 
@@ -95,9 +96,12 @@ class ConditionsBuilder
     private function getSubConditionsSql(array $condition): string
     {
         $count = count($condition);
-        if ($count == 1) {
-            // closure
-            [$condition] = $condition;
+        if ($count === 0) {
+            throw new ConditionException('Incorrect number of arguments');
+        }
+
+        if ($count === 1) {
+            $condition = array_shift($condition);
 
             if ($condition instanceof Closure) {
                 $query = new static($this->builder);
@@ -106,7 +110,6 @@ class ConditionsBuilder
                 return '(' . $query->getConditionsSql($this->bindings) . ')';
             }
 
-            // array conditions
             if (is_array($condition)) {
                 $conditions = [];
                 foreach ($condition as $column => $value) {
@@ -116,11 +119,14 @@ class ConditionsBuilder
                 return implode(static::SQL_AND, $conditions);
             }
 
-            // exception
-            return '';
+            if ($condition instanceof Raw) {
+                return sprintf('(%s)', $condition);
+            }
+
+            throw new ConditionException('Incorrect type of argument #1');
         }
 
-        if ($count == 2) {
+        if ($count === 2) {
             // equals ( = )
             [$column, $value] = $condition;
             $operator = '=';
@@ -139,14 +145,9 @@ class ConditionsBuilder
             return $this->getConditionSql($column, $operator, $value);
         }
 
-        if ($count == 3) {
-            [$column, $operator, $value] = $condition;
-            $column = $this->getPreparedColumn($column);
-            return $this->getConditionSql($column, $operator, $value);
-        }
-
-        // TODO: remake this & unit tests
-        return '';
+        [$column, $operator, $value] = $condition;
+        $column = $this->getPreparedColumn($column);
+        return $this->getConditionSql($column, $operator, $value);
     }
 
     /**

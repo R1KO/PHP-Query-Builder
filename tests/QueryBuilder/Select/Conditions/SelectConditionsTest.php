@@ -2,6 +2,8 @@
 
 namespace Tests\QueryBuilder\Conditions;
 
+use R1KO\QueryBuilder\Exceptions\ConditionException;
+use stdClass;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
 
@@ -334,5 +336,39 @@ class SelectConditionsTest extends TestCase
 
         $this->assertEquals($resultRow['email'], $row['email']);
         $this->assertEquals($resultRow['address'], $row['address']);
+    }
+
+    public function testSelectWithRaw(): void
+    {
+        $this->createUsersTable();
+        $this->createUsers(5);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where($this->db->raw('name IS NOT NULL'))
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(5, $results);
+    }
+
+    public function testSelectWrongArguments(): void
+    {
+        $this->expectException(ConditionException::class);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where()
+            ->getAll();
+    }
+
+    public function testSelectWrongArgumentType(): void
+    {
+        $this->expectException(ConditionException::class);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where(new stdClass())
+            ->getAll();
     }
 }
