@@ -25,6 +25,39 @@ class ConditionsBuilder
      * @param array $condition
      * @return $this
      */
+    public function where(...$condition)
+    {
+        $this->and(...$condition);
+
+        return $this;
+    }
+
+    /**
+     * @param array $condition
+     * @return $this
+     */
+    public function orWhere(...$condition)
+    {
+        $this->or(...$condition);
+
+        return $this;
+    }
+
+    /**
+     * @param array $condition
+     * @return $this
+     */
+    public function or(...$condition)
+    {
+        $this->conditions[] = [static::SQL_OR, $condition];
+
+        return $this;
+    }
+
+    /**
+     * @param array $condition
+     * @return $this
+     */
     public function and(...$condition)
     {
         $this->conditions[] = [static::SQL_AND, $condition];
@@ -45,9 +78,9 @@ class ConditionsBuilder
 
     /**
      * @param array $bindings
-     * @return string|null
+     * @return string
      */
-    public function getSql(array &$bindings = []): ?string
+    public function getSql(array &$bindings = []): string
     {
         $parts = [];
         $this->bindings = &$bindings;

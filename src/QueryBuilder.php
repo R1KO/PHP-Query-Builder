@@ -162,7 +162,7 @@ class QueryBuilder implements IQueryBuilder
             return $table;
         }
 
-        return $table.' AS '.$this->quoteColumn($alias);
+        return $table . ' AS ' . $this->quoteColumn($alias);
     }
 
     /**
@@ -647,7 +647,7 @@ class QueryBuilder implements IQueryBuilder
     {
         if ($column !== null) {
             $this->select([$column]);
-        } else if (count($this->select) === 0) {
+        } elseif (!isset($this->select) || count($this->select) === 0) {
             throw new BuilderException('No column specified');
         }
 
@@ -669,7 +669,7 @@ class QueryBuilder implements IQueryBuilder
     {
         if ($column !== null) {
             $this->select([$column]);
-        } else if (count($this->select) === 0) {
+        } elseif (!isset($this->select) || count($this->select) === 0) {
             // TODO: unit tests
             throw new BuilderException('No column specified');
         }
@@ -792,7 +792,7 @@ class QueryBuilder implements IQueryBuilder
     {
         if ($column instanceof IExpression) {
             $column = $column->get();
-        } else if (is_string($column) && $column !== '*') {
+        } elseif (is_string($column) && $column !== '*') {
             $column = $this->getQuotedColumnName($column);
         }
 
@@ -924,9 +924,9 @@ class QueryBuilder implements IQueryBuilder
         $table = $this->createTableExpression($table);
 
         $this->join[] = [
-            'type'      => $type,
-            'table'     => $table->getTable(),
-            'alias'     => $table->getAlias(),
+            'type'       => $type,
+            'table'      => $table->getTable(),
+            'alias'      => $table->getAlias(),
             'conditions' => $conditions,
         ];
 
@@ -951,7 +951,7 @@ class QueryBuilder implements IQueryBuilder
             $table = $this->getQuotedTableName($join['table'], $join['alias']);
 
             if (!$join['conditions']) {
-                $joins[] = sprintf(' %s JOIN %s', $type, $table);
+                $joins[] = sprintf('%s JOIN %s', $type, $table);
                 continue;
             }
 
@@ -971,7 +971,7 @@ class QueryBuilder implements IQueryBuilder
             }
 
             $joins[] = sprintf(
-                ' %s JOIN %s ON (%s)',
+                '%s JOIN %s ON (%s)',
                 $type,
                 $table,
                 $conditions
@@ -1021,7 +1021,7 @@ class QueryBuilder implements IQueryBuilder
         $columns = $this->getSelectColumnsSql();
 
         if ($this->isDistinct) {
-            $columns = 'DISTINCT '.$columns;
+            $columns = 'DISTINCT ' . $columns;
         }
 
         $query = sprintf(
@@ -1105,7 +1105,7 @@ class QueryBuilder implements IQueryBuilder
             $columnName = $column->get();
 
             if ($alias !== null) {
-                $columnName .= ' AS '.$this->quoteColumn($alias);
+                $columnName .= ' AS ' . $this->quoteColumn($alias);
             }
 
             return $columnName;
@@ -1138,13 +1138,13 @@ class QueryBuilder implements IQueryBuilder
         }
 
         if ($columnName == '*') {
-            return $table.'.'.$columnName;
+            return $table . '.' . $columnName;
         }
 
-        $columnName = $table.'.'.$this->quoteColumn($columnName);
+        $columnName = $table . '.' . $this->quoteColumn($columnName);
 
         if ($alias !== null) {
-            $columnName .= ' AS '.$this->quoteColumn($alias);
+            $columnName .= ' AS ' . $this->quoteColumn($alias);
         }
 
         return $columnName;
@@ -1164,7 +1164,7 @@ class QueryBuilder implements IQueryBuilder
             return $this->getQuotedColumnName($column);
         }, $this->groupBy);
 
-        return ' GROUP BY '.implode(', ', $columns);
+        return ' GROUP BY ' . implode(', ', $columns);
     }
 
     /**
@@ -1179,13 +1179,13 @@ class QueryBuilder implements IQueryBuilder
 
         $orderBy = array_map(
             function ($column, $dir) {
-                return $this->getQuotedColumnName($column).' '.$dir;
+                return $this->getQuotedColumnName($column) . ' ' . $dir;
             },
             array_keys($this->order),
             $this->order
         );
 
-        return ' ORDER BY '.implode(', ', $orderBy);
+        return ' ORDER BY ' . implode(', ', $orderBy);
     }
 
     /**
@@ -1229,7 +1229,16 @@ class QueryBuilder implements IQueryBuilder
      */
     private function getBindings(): ?array
     {
-        return $this->bind;
+        return $this->bindings;
+    }
+
+    public function getConditionsSql(array &$bindings): ?string
+    {
+        if (isset($this->where)) {
+            return $this->where->getSql($bindings);
+        }
+
+        return null;
     }
 
     /**
@@ -1238,15 +1247,13 @@ class QueryBuilder implements IQueryBuilder
      */
     private function getWhereSql(array &$bindings): ?string
     {
-        if (isset($this->where)) {
-            $sql = $this->where->getSql($bindings);
-
-            if ($sql) {
-                return ' WHERE '.$sql;
-            }
+        if (!isset($this->where)) {
+            return null;
         }
 
-        return null;
+        $sql = $this->where->getSql($bindings);
+
+        return ' WHERE ' . $sql;
     }
 
     /**
@@ -1255,15 +1262,13 @@ class QueryBuilder implements IQueryBuilder
      */
     private function getHavingSql(array &$bindings): ?string
     {
-        if (isset($this->having)) {
-            $sql = $this->having->getSql($bindings);
-
-            if ($sql) {
-                return ' HAVING '.$sql;
-            }
+        if (!isset($this->having)) {
+            return null;
         }
 
-        return null;
+        $sql = $this->having->getSql($bindings);
+
+        return ' HAVING ' . $sql;
     }
 
     /**
