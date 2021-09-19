@@ -47,17 +47,6 @@ class ConditionsBuilder
      * @param array $condition
      * @return $this
      */
-    public function or(...$condition)
-    {
-        $this->conditions[] = [static::SQL_OR, $condition];
-
-        return $this;
-    }
-
-    /**
-     * @param array $condition
-     * @return $this
-     */
     public function and(...$condition)
     {
         $this->conditions[] = [static::SQL_AND, $condition];
@@ -87,7 +76,7 @@ class ConditionsBuilder
 
         foreach ($this->conditions as $index => $conditionClause) {
             [$type, $condition] = $conditionClause;
-            $sql = $this->getNestedSql($condition);
+            $sql = $this->getClauseSql($condition);
 
             if ($index === 0) {
                 $parts[] = $sql;
@@ -105,7 +94,7 @@ class ConditionsBuilder
      * @return string
      * @throws ConditionException
      */
-    private function getNestedSql(array $condition): string
+    private function getClauseSql(array $condition): string
     {
         $count = count($condition);
         if ($count === 0) {
@@ -145,7 +134,7 @@ class ConditionsBuilder
         if (is_array($condition)) {
             $conditions = [];
             foreach ($condition as $column => $value) {
-                $conditions[] = $this->getNestedSql([$column, $value]);
+                $conditions[] = $this->getClauseSql([$column, $value]);
             }
 
             return implode(static::SQL_AND, $conditions);
