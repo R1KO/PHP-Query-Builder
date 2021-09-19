@@ -2,6 +2,7 @@
 
 namespace R1KO\QueryBuilder\Contracts;
 
+use Closure;
 use R1KO\Database\Contracts\IConnection;
 use R1KO\QueryBuilder\Expressions\Raw;
 
@@ -15,7 +16,8 @@ interface IQueryBuilder
     public function getSubQuerySelectSql(callable $subQuery, array &$bindings, bool $addBrackets = true): string;
 
     public function table(string $table, ?string $alias = null): IQueryBuilder;
-    public function from($table, ?string $alias = null): IQueryBuilder;
+    public function from(string $table, ?string $alias = null): IQueryBuilder;
+    public function fromSub(callable $table, string $alias): IQueryBuilder;
     public function insert(array $values): void;
     public function insertGetId(array $values, ?string $aiColumn = null): int;
     public function insertWithSub(array $values): void;

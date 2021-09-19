@@ -17,26 +17,24 @@ class QueryBuilder implements IQueryBuilder
 {
     private IConnection $db;
     private array $bind = [];
-    /**
-     * @var string|callable
-     */
-    private $table;
+    private string $table;
+    /** @var callable $tableSub */
+    private $tableSub;
     private ?string $alias = null;
     private array $join = [];
     private array $select = [];
-    private ?ConditionsBuilder $where = null;
+    private ConditionsBuilder $where;
     private array $groupBy = [];
-    private ?ConditionsBuilder $having = null;
+    private ConditionsBuilder $having;
     private array $order = [];
-    private ?int $limit = null;
-    private ?int $offset = null;
+    private int $limit;
+    private int $offset;
     private bool $isDistinct = false;
-    /**
-     * @var string|callable
-     */
+    /** @var string|callable */
     private $asObject;
 
     private ?string $sql;
+    private array $bindings = [];
 
     public function __construct(IConnection $db)
     {
@@ -50,23 +48,30 @@ class QueryBuilder implements IQueryBuilder
      */
     public function table(string $table, ?string $alias = null): IQueryBuilder
     {
-        return $this->from($table, $alias);
+        $this->table = $table;
+        $this->alias = $alias;
+        return $this;
     }
 
     /**
-     * @param string|callable $table
+     * @param string $table
      * @param string|null $alias
      * @return IQueryBuilder
      */
-    public function from($table, ?string $alias = null): IQueryBuilder
+    public function from(string $table, ?string $alias = null): IQueryBuilder
     {
-        if (!is_string($table) && !$alias) {
-            throw new BuilderException('No table alias specified!');
-        }
+        return $this->table($table, $alias);
+    }
 
-        $this->table = $table;
+    /**
+     * @param callable $table
+     * @param string $alias
+     * @return IQueryBuilder
+     */
+    public function fromSub(callable $table, string $alias): IQueryBuilder
+    {
+        $this->tableSub = $table;
         $this->alias = $alias;
-
         return $this;
     }
 
@@ -91,12 +96,12 @@ class QueryBuilder implements IQueryBuilder
     }
 
     /**
-     * @return string|callable
+     * @return string
      * @throws BuilderException
      */
-    protected function getTable()
+    protected function getTable(): string
     {
-        if (!$this->table) {
+        if (!isset($this->table)) {
             throw new BuilderException('No table specified!');
         }
 
@@ -108,20 +113,15 @@ class QueryBuilder implements IQueryBuilder
         return new self($this->db);
     }
 
-    protected function getSelectFromTableName(array &$bindings): string
+    protected function getTableNameForSelect(array &$bindings): string
     {
-        $table = $this->getTable();
-        if (is_string($table)) {
-            return $this->getQuotedTableName($table, $this->alias);
+        if (isset($this->tableSub)) {
+            $sql = $this->getSubQuerySelectSql($this->tableSub, $bindings);
+
+            return sprintf('%s AS %s', $sql, $this->alias);
         }
 
-        if (!$this->alias) {
-            throw new BuilderException('No table alias specified!');
-        }
-
-        $sql = $this->getSubQuerySelectSql($table, $bindings);
-
-        return sprintf('%s AS %s', $sql, $this->alias);
+        return $this->getQuotedTableName($this->getTable(), $this->alias);
     }
 
     private function getQuotedTableName(string $table, ?string $alias = null): string
@@ -140,13 +140,7 @@ class QueryBuilder implements IQueryBuilder
             return $this->quoteColumn($this->alias);
         }
 
-        $table = $this->getTable();
-
-        if (!is_string($table)) {
-            return $this->quoteColumn($this->alias);
-        }
-
-        return $this->quoteColumn($table);
+        return $this->quoteColumn($this->getTable());
     }
 
     public function insert(array $values): void
@@ -846,7 +840,7 @@ class QueryBuilder implements IQueryBuilder
         $query = sprintf(
             'SELECT %s FROM %s',
             $columns,
-            $this->getSelectFromTableName($bindings)
+            $this->getTableNameForSelect($bindings)
         );
 
         $join = $this->getJoinSql();
@@ -991,13 +985,13 @@ class QueryBuilder implements IQueryBuilder
 
     private function getLimitSql(array &$bindings): ?string
     {
-        if ($this->limit === null) {
+        if (!isset($this->limit)) {
             return null;
         }
 
         $query = ' LIMIT ?';
         $bindings[] = $this->limit;
-        if ($this->offset !== null) {
+        if (isset($this->offset)) {
             $query .= ' OFFSET ?';
             $bindings[] = $this->offset;
         }
@@ -1022,7 +1016,7 @@ class QueryBuilder implements IQueryBuilder
 
     private function getWhereSql(array &$bindings): ?string
     {
-        if ($this->where) {
+        if (isset($this->where)) {
             $sql = $this->where->getSql($bindings);
 
             if ($sql) {
@@ -1035,7 +1029,7 @@ class QueryBuilder implements IQueryBuilder
 
     private function getHavingSql(array &$bindings): ?string
     {
-        if ($this->having) {
+        if (isset($this->having)) {
             $sql = $this->having->getSql($bindings);
 
             if ($sql) {
@@ -1190,7 +1184,7 @@ class QueryBuilder implements IQueryBuilder
      */
     private function getWhereBuilder(): ConditionsBuilder
     {
-        if (!$this->where) {
+        if (!isset($this->where)) {
             $this->where = $this->createConditionsBuilder();
         }
 
@@ -1202,7 +1196,7 @@ class QueryBuilder implements IQueryBuilder
      */
     private function getHavingBuilder(): ConditionsBuilder
     {
-        if (!$this->having) {
+        if (!isset($this->having)) {
             $this->having = $this->createConditionsBuilder();
         }
 
