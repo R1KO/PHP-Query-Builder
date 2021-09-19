@@ -768,6 +768,7 @@ class QueryBuilder implements IQueryBuilder
     {
         return $this->addJoin('right', $table, $condition);
     }
+
     /**
      * @param string|array $table
      * @param array        $condition
@@ -777,6 +778,17 @@ class QueryBuilder implements IQueryBuilder
     {
         // TODO: unit tests
         return $this->addJoin('full', $table, $condition);
+    }
+
+    /**
+     * @param string|array $table
+     * @param array        $condition
+     * @return IQueryBuilder
+     */
+    public function crossJoin($table, array $condition): IQueryBuilder
+    {
+        // TODO: unit tests
+        return $this->addJoin('cross', $table, $condition);
     }
 
     /**
@@ -955,15 +967,15 @@ class QueryBuilder implements IQueryBuilder
 
     private function getGroupBySql(): ?string
     {
-        if ($this->groupBy) {
-            $columns = array_map(function ($column): string {
-                return $this->getQuotedColumnName($column);
-            }, $this->groupBy);
-
-            return ' GROUP BY ' . implode(', ', $columns);
+        if (!$this->groupBy) {
+            return null;
         }
 
-        return null;
+        $columns = array_map(function ($column): string {
+            return $this->getQuotedColumnName($column);
+        }, $this->groupBy);
+
+        return ' GROUP BY ' . implode(', ', $columns);
     }
 
     private function getOrderBySql(): ?string
