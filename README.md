@@ -531,6 +531,17 @@ SELECT * FROM users WHERE email = ? AND (address = ? OR address = ?)
 
 ```
 
+##### Exists
+```php
+->where('EXISTS', function (IQueryBuilder $query) {}) // EXISTS (query)
+->where('NOT EXISTS', function (IQueryBuilder $query) {}) // NOT EXISTS (query)
+
+// TODO: 
+->whereExists(function (IQueryBuilder $query) {}) // EXISTS (query)
+->whereNotExists(function (IQueryBuilder $query) {}) // NOT EXISTS (query)
+
+```
+
 #### JSON
 ```php
 // TODO: JSON

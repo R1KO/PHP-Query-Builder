@@ -5,11 +5,13 @@ namespace Tests\QueryBuilder\Conditions;
 use R1KO\QueryBuilder\Exceptions\ConditionException;
 use stdClass;
 use Tests\TestCase;
+use Tests\Traits\PostsTable;
 use Tests\Traits\UsersTable;
 
 class SelectConditionsTest extends TestCase
 {
     use UsersTable;
+    use PostsTable;
 
     public function testSelectWithEquals(): void
     {
@@ -243,8 +245,8 @@ class SelectConditionsTest extends TestCase
         $this->createUsersTable();
         $this->createUsers(5);
         $values = [
-            'name'    => 'test-name ' . time(),
-            'email'   => 'test-email ' . time(),
+            'name'  => 'test-name ' . time(),
+            'email' => 'test-email ' . time(),
         ];
 
         $this->createUserByValues($values);
@@ -264,6 +266,81 @@ class SelectConditionsTest extends TestCase
 
         $this->assertNotNull($results);
         $this->assertCount(5, $results);
+    }
+
+    private function doPrepareDataForExists(): void
+    {
+        $this->createUsersTable();
+        $this->createPostsTable();
+        $this->createUsers(5);
+
+        $results = $this->db->table('users')
+            ->limit(1)
+            ->getCol('id');
+
+        $idUser = array_shift($results);
+
+        $this->createPostsByUser($idUser, 2);
+    }
+
+    public function testSelectWithExistsAndNotExists(): void
+    {
+        $this->doPrepareDataForExists();
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('EXISTS', function ($query) {
+                $query->select(['id_user'])
+                    ->from('posts')
+                    ->where('id_user', $this->db->raw('users.id'));
+            })
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(1, $results);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('NOT EXISTS', function ($query) {
+                $query->select(['id_user'])
+                    ->from('posts')
+                    ->where('id_user', $this->db->raw('users.id'));
+            })
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(4, $results);
+    }
+
+    public function testSelectWithExistsAndNotExistsByRaw(): void
+    {
+        $this->doPrepareDataForExists();
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('EXISTS', $this->db->raw('SELECT id FROM posts WHERE id_user = users.id'))
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(1, $results);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('NOT EXISTS', $this->db->raw('SELECT id FROM posts WHERE id_user = users.id'))
+            ->getAll();
+
+        $this->assertNotNull($results);
+        $this->assertCount(4, $results);
+    }
+
+    public function testSelectWithExistsWrongArgumentType(): void
+    {
+        $this->expectException(ConditionException::class);
+
+        $results = $this->db->table('users')
+            ->select(['*'])
+            ->where('NOT EXISTS', new stdClass())
+            ->getAll();
     }
 
     public function testSelectWithSubCondition(): void

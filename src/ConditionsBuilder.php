@@ -153,10 +153,26 @@ class ConditionsBuilder
      */
     private function getConditionFromTwoArguments(string $column, $value): string
     {
+        $column = trim($column);
+        $preparedColumn = strtoupper(trim($column));
+
+        if (in_array($preparedColumn, ['EXISTS', 'NOT EXISTS'])) {
+            if (is_callable($value)) {
+                $value = $this->builder->getSubQuerySelectSql($value, $this->bindings, false);
+            } elseif ($value instanceof Raw) {
+                $value = $value->get();
+            } else {
+                throw new ConditionException('Value for "EXISTS" must be Callable or Raw');
+            }
+
+            return sprintf('%s (%s)', $preparedColumn, $value);
+        }
+
         $operator = '=';
         if (strpos($column, ' ') !== false) {
             [$column, $operator] = explode(' ', $column, 2);
         }
+
         $column = trim($column);
 
         if (is_callable($value)) {
@@ -201,7 +217,11 @@ class ConditionsBuilder
     private function getConditionSql(string $column, string $operator, $value): string
     {
         $operator = $this->getPreparedOperator($operator);
-        $value = $this->getValueByOperator($operator, $value);
+        if ($value instanceof Raw) {
+            $value = $value->get();
+        } else {
+            $value = $this->getValueByOperator($operator, $value);
+        }
         return implode(' ', [$column, $operator, $value]);
     }
 
