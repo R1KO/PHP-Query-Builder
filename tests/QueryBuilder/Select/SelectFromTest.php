@@ -7,6 +7,7 @@ use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use stdClass;
 use Tests\TestCase;
 use Tests\Traits\UsersTable;
+use TypeError;
 
 class SelectFromTest extends TestCase
 {
@@ -44,7 +45,7 @@ class SelectFromTest extends TestCase
         $this->createUsers(5);
 
         $results = $this->db->builder()
-            ->from(function (IQueryBuilder $query) {
+            ->fromSub(function (IQueryBuilder $query) {
                 $query->table('users')
                     ->select(['name', 'address'])
                     ->limit(3)
@@ -55,23 +56,6 @@ class SelectFromTest extends TestCase
 
         $this->assertNotNull($results);
         $this->assertCount(3, $results);
-    }
-
-    public function testSelectFromDynamicTableWithoutAlias(): void
-    {
-        $this->createUsersTable();
-        $this->createUsers(5);
-
-        $this->expectException(BuilderException::class);
-
-        $results = $this->db->builder()
-            ->from(function (IQueryBuilder $query) {
-                $query->table('users')
-                    ->select(['name', 'address'])
-                    ->limit(3);
-            })
-            ->select(['*'])
-            ->getAll();
     }
 
     public function testSelectWithoutTable(): void
@@ -85,10 +69,10 @@ class SelectFromTest extends TestCase
 
     public function testSelectWithInvalidTable(): void
     {
-        $this->expectException(BuilderException::class);
+        $this->expectException(TypeError::class);
 
         $results = $this->db->builder()
-            ->from(new stdClass())
+            ->fromSub(new stdClass(), 'table')
             ->select(['*'])
             ->getAll();
     }
