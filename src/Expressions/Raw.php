@@ -2,9 +2,11 @@
 
 namespace R1KO\QueryBuilder\Expressions;
 
-class Raw
+use R1KO\QueryBuilder\Contracts\IExpression;
+
+class Raw implements IExpression
 {
-    private $expression;
+    private string $expression;
 
     public function __construct(string $expression)
     {

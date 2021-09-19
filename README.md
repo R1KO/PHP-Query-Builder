@@ -400,7 +400,6 @@ public function whereOr(array $conditions);
 // WHERE [condition 1] OR [condition 2] OR [condition N] ...
 
 // TODO
-public function whereColumn
 public function whereExists
 
 upsert
@@ -540,6 +539,10 @@ SELECT * FROM users WHERE email = ? AND (address = ? OR address = ?)
 ->whereExists(function (IQueryBuilder $query) {}) // EXISTS (query)
 ->whereNotExists(function (IQueryBuilder $query) {}) // NOT EXISTS (query)
 
+
+##### Column
+
+public function whereColumn(string $column1, string $column2) // col1 = col2
 ```
 
 #### JSON
@@ -628,28 +631,53 @@ $posts = $this->db->table('posts')
 ```php
 $posts = $this->db->table('posts')
     ->select(['posts.*', 'authors.name' => 'author_name'])
-    ->join(['users' => 'authors'], ['posts.id_user' => 'authors.id'])
+    ->join('users as authors', ['posts.id_user' => 'authors.id'])
     ->getAll();
 ```
 
 ```php
 $posts = $this->db->table('posts')
     ->select(['posts.*', 'authors.name' => 'author_name'])
-    ->leftJoin(['users' => 'authors'], ['posts.id_user' => 'authors.id'])
+    ->innerJoin('users as authors', ['posts.id_user' => 'authors.id'])
     ->getAll();
 ```
 
 ```php
 $posts = $this->db->table('posts')
     ->select(['posts.*', 'authors.name' => 'author_name'])
-    ->rightJoin(['users' => 'authors'], ['posts.id_user' => 'authors.id'])
+    ->leftJoin('users as authors', ['posts.id_user' => 'authors.id'])
     ->getAll();
 ```
 
 ```php
 $posts = $this->db->table('posts')
     ->select(['posts.*', 'authors.name' => 'author_name'])
-    ->fullJoin(['users' => 'authors'], ['posts.id_user' => 'authors.id'])
+    ->rightJoin('users as authors', ['posts.id_user' => 'authors.id'])
+    ->getAll();
+```
+
+```php
+$posts = $this->db->table('posts')
+    ->select(['posts.*', 'authors.name' => 'author_name'])
+    ->fullJoin('users as authors', ['posts.id_user' => 'authors.id'])
+    ->getAll();
+```
+
+```php
+$posts = $this->db->table('posts')
+    ->select(['posts.*', 'authors.name' => 'author_name'])
+    ->crossJoin('users as authors', ['posts.id_user' => 'authors.id'])
+    ->getAll();
+```
+
+
+```php
+$posts = $this->db->table('comments')
+    ->select(['comments.*', 'users.name' => 'author_name'])
+    ->join('users', function ($conditions) {
+        $conditions->whereColumn('comments.id_user', 'users.id')
+            ->orWhereColumn('comments.id_author', 'users.id');
+    })
     ->getAll();
 ```
 

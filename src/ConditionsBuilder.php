@@ -2,9 +2,9 @@
 
 namespace R1KO\QueryBuilder;
 
+use R1KO\QueryBuilder\Contracts\IExpression;
 use R1KO\QueryBuilder\Contracts\IQueryBuilder;
 use R1KO\QueryBuilder\Exceptions\ConditionException;
-use R1KO\QueryBuilder\Expressions\Raw;
 use Closure;
 
 class ConditionsBuilder
@@ -19,28 +19,6 @@ class ConditionsBuilder
     final public function __construct(IQueryBuilder $builder)
     {
         $this->builder = $builder;
-    }
-
-    /**
-     * @param array $condition
-     * @return $this
-     */
-    public function where(...$condition)
-    {
-        $this->conditions[] = [static::SQL_AND, $condition];
-
-        return $this;
-    }
-
-    /**
-     * @param array $condition
-     * @return $this
-     */
-    public function orWhere(...$condition)
-    {
-        $this->conditions[] = [static::SQL_OR, $condition];
-
-        return $this;
     }
 
     /**
@@ -92,6 +70,7 @@ class ConditionsBuilder
     /**
      * @param array $condition
      * @return string
+     * @throws ConditionException
      */
     private function getNestedSql(array $condition): string
     {
@@ -118,7 +97,7 @@ class ConditionsBuilder
     }
 
     /**
-     * @param array|Closure|Raw $condition
+     * @param array|Closure|IExpression $condition
      * @return string
      */
     private function getConditionFromOneArgument($condition): string
@@ -139,8 +118,8 @@ class ConditionsBuilder
             return implode(static::SQL_AND, $conditions);
         }
 
-        if ($condition instanceof Raw) {
-            return sprintf('(%s)', $condition);
+        if ($this->isExpression($condition)) {
+            return sprintf('(%s)', $condition->get());
         }
 
         throw new ConditionException('Incorrect type of argument #1');
@@ -159,10 +138,10 @@ class ConditionsBuilder
         if (in_array($preparedColumn, ['EXISTS', 'NOT EXISTS'])) {
             if (is_callable($value)) {
                 $value = $this->builder->getSubQuerySelectSql($value, $this->bindings, false);
-            } elseif ($value instanceof Raw) {
+            } elseif ($this->isExpression($value)) {
                 $value = $value->get();
             } else {
-                throw new ConditionException('Value for "EXISTS" must be Callable or Raw');
+                throw new ConditionException('Value for "EXISTS" must be Callable or IExpression');
             }
 
             return sprintf('%s (%s)', $preparedColumn, $value);
@@ -173,7 +152,7 @@ class ConditionsBuilder
             [$column, $operator] = explode(' ', $column, 2);
         }
 
-        $column = trim($column);
+        $column = $this->quoteColumn(trim($column));
 
         if (is_callable($value)) {
             $value = $this->builder->getSubQuerySelectSql($value, $this->bindings);
@@ -186,17 +165,17 @@ class ConditionsBuilder
     }
 
     /**
-     * @param string|Raw $value
+     * @param string|IExpression $value
      * @return bool
      */
-    private function isRaw($value): bool
+    private function isExpression($value): bool
     {
-        return $value instanceof Raw;
+        return $value instanceof IExpression;
     }
 
     private function getPreparedColumn($column): string
     {
-        if ($this->isRaw($column)) {
+        if ($this->isExpression($column)) {
             return $column->get();
         }
 
@@ -217,11 +196,12 @@ class ConditionsBuilder
     private function getConditionSql(string $column, string $operator, $value): string
     {
         $operator = $this->getPreparedOperator($operator);
-        if ($value instanceof Raw) {
+        if ($this->isExpression($value)) {
             $value = $value->get();
         } else {
             $value = $this->getValueByOperator($operator, $value);
         }
+
         return implode(' ', [$column, $operator, $value]);
     }
 
